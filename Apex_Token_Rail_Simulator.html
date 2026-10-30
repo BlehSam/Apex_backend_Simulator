@@ -1,0 +1,1389 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Apex Token Rail Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cream workspace. Charcoal header with the clock; payment console beside three live ledgers (COBOL · queue · blockchain); client wallets grid; security centre; test data sheet. */
+:root{
+  --bg:#f5eee8; --panel:#fffaf7; --sunk:#f0e6e0; --ink:#1f1a1c; --muted:#6e6367; --line:#e4d6cf;
+  --head:#231e20; --head-ink:#f7eee9; --head-muted:#bfb1b5;
+  --rose:#b5486b; --rose-soft:#f7dbe3; --blush:#eebccb;
+  --cobol:#6a5d63; --cobol-soft:#ebe2de;
+  --chain:#b5486b; --chain-soft:#f7dbe3;
+  --ok:#4c7a58; --ok-soft:#e2eee4; --warn:#a2661c; --warn-soft:#f6e8d3; --bad:#b0332e; --bad-soft:#f8dbd8;
+  --dot:#e2d2ca;
+  --f-display:"Bricolage Grotesque","Segoe UI",Arial,sans-serif;
+  --f-body:"Manrope","Segoe UI",Arial,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161214; --panel:#201a1d; --sunk:#1a1518; --ink:#f4ebe7; --muted:#b2a4a9; --line:#3a2f33;
+  --head:#0f0c0d; --head-ink:#f7eee9; --head-muted:#a8999e;
+  --rose:#e889a7; --rose-soft:#3e2029; --blush:#7a3d50;
+  --cobol:#b9abb1; --cobol-soft:#2b2427; --chain:#e889a7; --chain-soft:#3e2029;
+  --ok:#8fc49c; --ok-soft:#1d3024; --warn:#e3b06a; --warn-soft:#35281a; --bad:#f08a83; --bad-soft:#3d1e1c; --dot:#2a2226; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161214; --panel:#201a1d; --sunk:#1a1518; --ink:#f4ebe7; --muted:#b2a4a9; --line:#3a2f33;
+  --head:#0f0c0d; --head-ink:#f7eee9; --head-muted:#a8999e;
+  --rose:#e889a7; --rose-soft:#3e2029; --blush:#7a3d50;
+  --cobol:#b9abb1; --cobol-soft:#2b2427; --chain:#e889a7; --chain-soft:#3e2029;
+  --ok:#8fc49c; --ok-soft:#1d3024; --warn:#e3b06a; --warn-soft:#35281a; --bad:#f08a83; --bad-soft:#3d1e1c; --dot:#2a2226; color-scheme:dark}
+*{box-sizing:border-box}
+body{background-color:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1.3px);background-size:20px 20px;color:var(--ink);font:14px/1.5 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 70px}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.eyebrow{font:700 10.5px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0;box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 5%,transparent),0 18px 40px -28px color-mix(in srgb,var(--ink) 35%,transparent)}
+.card>h2{font-size:19px;font-weight:700}
+.sub{color:var(--muted);font-size:12.5px;margin:3px 0 12px;max-width:72ch}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;transition:border-color .15s,background .15s,transform .1s}
+.btn:hover{border-color:var(--rose)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn.rose{background:var(--rose);color:#fff;border-color:var(--rose)}
+.btn.mini{padding:3px 10px;font-size:11.5px}
+.pill{display:inline-flex;align-items:center;gap:5px;font:700 11px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:999px}
+.p-APPROVE{background:var(--ok-soft);color:var(--ok)} .p-MONITOR{background:var(--warn-soft);color:var(--warn)} .p-HOLD{background:var(--bad-soft);color:var(--bad)} .p-BLOCK{background:var(--bad);color:#fff} .p-REJECT{background:var(--sunk);color:var(--ink);border:1px solid var(--line)} .p-WAIT{background:var(--cobol-soft);color:var(--cobol)}
+.tag{display:inline-block;font:700 10px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:4px 6px;margin:0 4px 2px 0;vertical-align:1px}
+.t-ok{background:var(--ok-soft);color:var(--ok)} .t-warn{background:var(--warn-soft);color:var(--warn)} .t-bad{background:var(--bad-soft);color:var(--bad)} .t-rose{background:var(--rose-soft);color:var(--rose)} .t-grey{background:var(--cobol-soft);color:var(--cobol)}
+
+/* Header */
+.top{background:var(--head);color:var(--head-ink);border-radius:22px;padding:18px 22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 50px -30px #000}
+.toprow{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;justify-content:space-between}
+.brand{display:flex;gap:12px;align-items:center}
+.brand svg{width:40px;height:40px;flex:none}
+.brand h1{font-size:25px;font-weight:800;color:var(--head-ink)}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--head-muted)}
+.brand .eyebrow{color:#eebccb}
+.clock{display:flex;align-items:baseline;gap:10px}
+.clock .time{font:600 34px/1 var(--f-mono);letter-spacing:-.02em}
+.clock .day{color:var(--head-muted);font-size:13px}
+.status{display:flex;flex-wrap:wrap;gap:6px}
+.st{display:inline-flex;align-items:center;gap:7px;border:1px solid #ffffff22;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600}
+.st i{width:8px;height:8px;border-radius:50%;background:#888}
+.st.on i{background:#7fd08f;box-shadow:0 0 0 3px #7fd08f33} .st.off i{background:#f07a73;box-shadow:0 0 0 3px #f07a7333} .st.rail i{background:var(--blush);box-shadow:0 0 0 3px #eebccb33;animation:beat 2s ease-in-out infinite}
+.st small{font-weight:400;color:var(--head-muted)}
+@keyframes beat{50%{transform:scale(1.35)}}
+.ctrls{display:flex;flex-wrap:wrap;gap:6px}
+.top .btn{background:transparent;color:var(--head-ink);border-color:#ffffff30}
+.top .btn:hover{border-color:var(--blush)}
+.top .btn[aria-pressed="true"]{background:var(--head-ink);color:var(--head)}
+.top .btn.rose{background:#eebccb;border-color:#eebccb;color:#231e20}
+.strip{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;position:relative}
+.strip div{height:24px;border-radius:5px;background:#ffffff12;font:10px/24px var(--f-mono);text-align:center;color:var(--head-muted);position:relative;overflow:hidden}
+.strip div.open{background:#eebccb2e;color:var(--head-ink)}
+.strip div.batch::after{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:var(--blush)}
+.strip .cursor{position:absolute;top:-4px;bottom:-4px;width:3px;border-radius:2px;background:#fff;box-shadow:0 0 0 3px #ffffff33;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--head-muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:14px;height:10px;border-radius:3px;display:inline-block}
+
+/* Pipeline */
+.pipe{display:flex;flex-direction:column;gap:10px}
+.stages{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.stage{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);transition:all .2s}
+.stage i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.stage.hot{background:var(--ink);color:var(--panel);border-color:var(--ink);transform:translateY(-1px);box-shadow:0 6px 14px -6px var(--ink)}
+.stage.hot i{background:var(--blush)}
+.stage.hot.bad{background:var(--bad);border-color:var(--bad)}
+.stage.done{color:var(--ink)} .stage.done i{background:var(--rose)}
+.arrow{color:var(--line);font-size:14px}
+.narr{border-left:4px solid var(--rose);background:var(--sunk);border-radius:0 12px 12px 0;padding:11px 14px;font-size:14px;min-height:46px}
+.narr b{font-family:var(--f-display)}
+
+/* Main grid */
+.main{display:grid;grid-template-columns:minmax(290px,340px) minmax(0,1fr);gap:16px;align-items:start}
+.form{display:grid;gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--muted)}
+select,input[type=number]{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:9px 11px;font-size:13.5px}
+input[type=number]{font-family:var(--f-mono);font-size:15px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;background:var(--sunk);border:1px solid var(--line);border-radius:14px;padding:3px}
+.tabs button{border:0;background:transparent;border-radius:11px;padding:8px 4px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 4px color-mix(in srgb,var(--ink) 18%,transparent)}
+.quick{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.quick button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700}
+.quick button:hover{border-color:var(--rose);color:var(--rose)}
+.amtread{margin-left:auto;font-size:12px;color:var(--rose);font-weight:600}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.go{width:100%;padding:11px;font-size:14px}
+
+.ledgers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;min-width:0;display:flex;flex-direction:column;gap:10px;transition:box-shadow .25s,border-color .25s}
+.col.hot{border-color:var(--rose);box-shadow:0 0 0 4px color-mix(in srgb,var(--rose) 18%,transparent)}
+.colhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.colhead h3{font-size:16px;font-weight:700}
+.colhead small{display:block;color:var(--muted);font-size:11.5px}
+.big{font:600 20px/1.15 var(--f-mono);font-variant-numeric:tabular-nums}
+.kv{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);padding:6px 0;border-bottom:1px dashed var(--line)}
+.kv b{color:var(--ink);font-family:var(--f-mono);font-weight:600}
+.feed{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto;padding-right:2px}
+.item{border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:8px 10px;font-size:12px;animation:slidein .35s ease}
+.item b{font-family:var(--f-mono);font-weight:600}
+.item small{display:block;color:var(--muted);font-size:11px}
+.item.wait{border-style:dashed}
+.item.posted{background:var(--ok-soft);border-color:transparent;animation:posted .5s ease both}
+.item .r{float:right;font-size:11px;font-weight:700}
+@keyframes slidein{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+@keyframes posted{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.empty{color:var(--muted);font-size:12px;border:1px dashed var(--line);border-radius:12px;padding:10px;text-align:center}
+.col.offline{background:repeating-linear-gradient(135deg,var(--panel),var(--panel) 10px,var(--sunk) 10px,var(--sunk) 20px)}
+.badge{font:700 10.5px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.b-on{background:var(--ok-soft);color:var(--ok)} .b-off{background:var(--bad-soft);color:var(--bad)} .b-rail{background:var(--rose-soft);color:var(--rose)}
+
+/* Wallets */
+.wallets{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.w{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;text-align:left;transition:border-color .2s,box-shadow .2s}
+.w:hover{border-color:var(--rose)}
+.w.acting{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--ink) 12%,transparent)}
+.w .nm{font-weight:700;font-size:13px;line-height:1.25}
+.w .sg{font-size:11px;color:var(--muted)}
+.w .rows{display:grid;grid-template-columns:1fr;gap:5px}
+.w .cell{border-radius:10px;padding:7px 10px;position:relative;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.w .cell span{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.w .cell b{font:600 13px var(--f-mono)}
+.cb{background:var(--cobol-soft)} .cb span{color:var(--cobol)}
+.ct{background:var(--chain-soft)} .ct span{color:var(--chain)}
+.w .sync{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.w .sync .wt{color:var(--warn);font-weight:700}
+.w .sync .ok{color:var(--ok);font-weight:700}
+.delta{display:inline-block;margin-left:4px;font:700 10.5px var(--f-mono);padding:1px 6px;border-radius:999px;animation:pop 4.5s ease forwards}
+.delta.up{background:var(--ok-soft);color:var(--ok)} .delta.down{background:var(--bad-soft);color:var(--bad)}
+@keyframes pop{0%{transform:scale(.5);opacity:0}8%{transform:scale(1.15);opacity:1}18%{transform:scale(1)}85%{opacity:1}100%{opacity:0}}
+.cell.flash{animation:glow 1.4s ease}
+@keyframes glow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--rose) 60%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+
+/* Coins */
+.coin{position:fixed;z-index:60;pointer-events:none;font:700 12px var(--f-mono);padding:6px 10px;border-radius:999px;background:var(--rose);color:#fff;box-shadow:0 8px 18px -6px var(--rose);white-space:nowrap}
+.coin.cobol{background:var(--cobol);box-shadow:0 8px 18px -6px var(--cobol)}
+.coin.ev{background:var(--ink);color:var(--panel)}
+
+/* Security row */
+.trio{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1.25fr);gap:16px;align-items:start}
+.decision{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--sunk)}
+.scorebar{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--ok-soft) 0 35%,var(--warn-soft) 35% 65%,var(--bad-soft) 65% 100%);margin:12px 0 3px}
+.scorebar i{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--ink);transform:translateX(-2px);transition:left .4s}
+.scale{display:flex;justify-content:space-between;font:10px var(--f-mono);color:var(--muted)}
+.sig{list-style:none;margin:10px 0 0;padding:0;font-size:12px}
+.sig li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.sig li b{font-family:var(--f-mono);text-align:right}
+.sig li small{display:block;color:var(--muted)}
+.rules{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+.alerts{display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:220px;overflow:auto}
+.alert{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start;font-size:12px;border-radius:12px;padding:8px 10px;background:var(--sunk)}
+.alert small{display:block;color:var(--muted)}
+.hold{border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:12px;padding:10px;font-size:12.5px;background:var(--sunk)}
+.hold .act{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.holds{display:flex;flex-direction:column;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font:700 10.5px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+.tablewrap{overflow-x:auto}
+.st-ok,.st-wait,.st-bad{font-weight:700;white-space:nowrap} .st-ok{color:var(--ok)} .st-wait{color:var(--warn)} .st-bad{color:var(--bad)}
+.toggle{display:flex;gap:8px;align-items:flex-start;font-size:12px;margin-top:12px}
+.backing{display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--ok-soft)}
+.backing.bad{background:var(--bad-soft)}
+.backing b{font:600 18px var(--f-mono)}
+
+/* Tests */
+.tests{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.tc{border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--panel);display:flex;flex-direction:column;gap:8px}
+.tc h3{font-size:14.5px;font-weight:700}
+.tc .when{font-size:11.5px;color:var(--muted)}
+.tc ol{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.tc li{display:flex;justify-content:space-between;gap:8px;align-items:center;background:var(--sunk);border-radius:10px;padding:7px 9px;font-size:12px}
+.tc li span{min-width:0}
+.tc .exp{font-size:12px}
+details.card>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary h2{font-size:19px}
+details.card>summary::after{content:"Show";font-size:12px;font-weight:700;color:var(--rose);border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+details[open].card>summary::after{content:"Hide"}
+tr.pass>td:last-child{color:var(--ok);font-weight:700} tr.fail>td:last-child{color:var(--bad);font-weight:700}
+.whyrow>td{background:var(--sunk)}
+.log{max-height:320px;overflow:auto;font-size:12px}
+.log div{display:grid;grid-template-columns:110px 90px minmax(0,1fr);gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.log time{font-family:var(--f-mono);color:var(--muted);font-size:11px}
+.log p{margin:0;overflow-wrap:anywhere}
+.foot{font-size:11.5px;color:var(--muted)}
+
+/* Navigation + views */
+.nav{position:sticky;top:8px;z-index:30;display:flex;gap:4px;align-items:center;overflow-x:auto;background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:16px;padding:5px;box-shadow:0 12px 28px -22px color-mix(in srgb,var(--ink) 60%,transparent)}
+.nav button{flex:none;border:0;background:transparent;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.nav button:hover{color:var(--ink);background:var(--sunk)}
+.nav button[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.cnt{font:700 10.5px/1 var(--f-mono);background:var(--rose-soft);color:var(--rose);border-radius:999px;padding:3px 7px}
+.nav button[aria-selected="true"] .cnt{background:var(--blush);color:#231e20}
+.cnt.bad,.nav button[aria-selected="true"] .cnt.bad{background:var(--bad);color:#fff}
+.busy{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--rose);padding:6px 12px;border-radius:999px;background:var(--rose-soft);max-width:440px;overflow:hidden;white-space:nowrap}
+.busy span{overflow:hidden;text-overflow:ellipsis}
+.busy i,.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex:none}
+.btn.loading::before{content:"";display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:-2px}
+.btn.loading:disabled{opacity:.8;cursor:progress}
+@keyframes spin{to{transform:rotate(360deg)}}
+.view{display:flex;flex-direction:column;gap:16px}
+.cardhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.cardhead .acts{display:flex;gap:6px;flex-wrap:wrap}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{border:1px solid var(--line);border-top:4px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--panel);display:flex;flex-direction:column;gap:3px;min-width:0}
+.tile .lab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .val{font:600 21px/1.15 var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile small{font-size:11.5px;color:var(--muted)}
+.tile.ok{border-top-color:var(--ok)} .tile.warn{border-top-color:var(--warn)} .tile.bad{border-top-color:var(--bad)} .tile.rose{border-top-color:var(--rose)} .tile.grey{border-top-color:var(--cobol)}
+.sysmap{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:10px;align-items:stretch}
+.mnode{position:relative;border:1px solid var(--line);border-top:4px solid var(--c);border-radius:14px;padding:10px;background:var(--sunk);display:flex;flex-direction:column;gap:3px;min-width:0;transition:background .25s,transform .25s,box-shadow .25s}
+.mnode .ly{font:700 9.5px/1 var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.mnode b{font:700 13px/1.2 var(--f-display)}
+.mnode span{font:600 11px/1.3 var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.mnode:not(:last-child)::after{content:"›";position:absolute;right:-6px;top:50%;transform:translate(50%,-50%);color:var(--muted);font-size:16px;font-weight:700}
+.mnode.hot{background:var(--ink);color:var(--panel);transform:translateY(-2px);box-shadow:0 10px 20px -10px var(--ink)}
+.mnode.hot span{color:var(--blush)}
+.mnode.hot.bad{background:var(--bad)}
+.mnode.done{border-color:var(--c)}
+.duo{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+.trace{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
+.tr{display:grid;grid-template-columns:128px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:12.5px;padding:7px 9px;border-radius:10px;background:var(--sunk);border-left:3px solid var(--rose);animation:slidein .3s ease}
+.tr small{display:block;color:var(--muted);font-size:11.5px}
+.tr time{font:11px var(--f-mono);color:var(--muted)}
+.tr.bad{border-left-color:var(--bad)}
+.tr.now{background:var(--rose-soft)}
+.qa{display:flex;flex-wrap:wrap;gap:6px}
+.notes{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:260px;overflow:auto}
+.note{font-size:12px;border-radius:10px;padding:7px 10px;background:var(--sunk);border-left:4px solid var(--ink)}
+.note small{display:block;color:var(--muted);font-size:10.5px}
+.note.ok{border-left-color:var(--ok)} .note.warn{border-left-color:var(--warn)} .note.bad{border-left-color:var(--bad)} .note.rose{border-left-color:var(--rose)}
+/* Clients */
+.clients{display:grid;grid-template-columns:minmax(300px,400px) minmax(0,1fr);gap:16px;align-items:start}
+.search{width:100%;border:1px solid var(--line);background:var(--sunk);border-radius:12px;padding:9px 12px;font-size:13.5px}
+.segs{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 6px}
+.segs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.segs button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.clist{display:flex;flex-direction:column;gap:6px;max-height:680px;overflow:auto;padding-right:2px}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:10px 12px;transition:border-color .15s}
+.crow:hover{border-color:var(--rose)}
+.crow.sel{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--ink) 12%,transparent)}
+.crow .cn b{display:block;font-size:13px;line-height:1.25}
+.crow .cn small{font-size:11px;color:var(--muted)}
+.crow .cv2{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.crow .cv2 span{font:600 12px var(--f-mono);padding:2px 8px;border-radius:8px;white-space:nowrap}
+.crow .cv2 .cb{color:var(--cobol)} .crow .cv2 .ct{color:var(--chain)}
+.crow .cs{grid-column:1/-1;font-size:11px}
+.prof-h{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.prof-h h2{font-size:22px}
+.bal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.bal>div{border-radius:14px;padding:12px;min-width:0}
+.bal span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.bal b{font:600 18px/1.2 var(--f-mono);overflow-wrap:anywhere}
+.bal small{display:block;font-size:11px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.facts div{border:1px dashed var(--line);border-radius:12px;padding:8px 10px;font-size:12px;min-width:0}
+.facts span{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+/* Tokenize */
+.tokgrid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:16px;align-items:start}
+.elig{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--sunk);display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.chk{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.chk small{color:var(--muted);text-align:right}
+.res{border-radius:16px;padding:14px;border:1px solid var(--line);background:var(--sunk)}
+.res.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.res.bad{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+.res.wait{background:var(--rose-soft)}
+.res h3{font-size:17px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.res table{margin-top:8px}
+.flow5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.flow5 div{border-radius:12px;padding:10px;background:var(--sunk);font-size:12px}
+.flow5 b{display:block;font-family:var(--f-display);font-size:13.5px;margin-bottom:2px}
+/* Queue */
+.qgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.qgrid>div{display:flex;flex-direction:column;gap:16px;min-width:0}
+.banner{border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.banner.on{background:var(--ok-soft)} .banner.off{background:var(--warn-soft)}
+.sched{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:6px 0 14px}
+.slot{border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:12px;background:var(--sunk)}
+.slot b{display:block;font:600 15px var(--f-mono)}
+.slot.done{opacity:.6} .slot.next{border-color:var(--rose);background:var(--rose-soft)}
+tr.click{cursor:pointer} tr.click:hover>td{background:var(--sunk)} tr.sel>td{background:var(--rose-soft)}
+/* AI */
+.aigrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px;align-items:start}
+.aigrid>.aiside{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ahead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--sunk);margin-bottom:6px}
+.astep{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.astep>i{width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--panel);font:700 12px/26px var(--f-mono);text-align:center;font-style:normal}
+.astep h3{font-size:15px}
+.astep .sub{margin-bottom:8px}
+.kvg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.kvg div{background:var(--sunk);border-radius:10px;padding:6px 9px;font-size:12px;min-width:0;overflow-wrap:anywhere}
+.kvg span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fl{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--line)}
+.fl.ok{background:var(--ok)} .fl.warn{background:var(--warn)} .fl.bad{background:var(--bad)}
+td code{font:11.5px var(--f-mono);color:var(--rose);overflow-wrap:anywhere}
+.sar{white-space:pre-wrap;font:11.5px/1.5 var(--f-mono);background:var(--sunk);border:1px dashed var(--line);border-radius:12px;padding:10px;margin-top:8px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.filters .segs{margin:0}
+.filters .search{max-width:340px}
+.toast{position:relative;overflow:hidden}
+.toast::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--ink);transform-origin:left;animation:shrink 4.8s linear forwards}
+.toast.ok::after{background:var(--ok)} .toast.warn::after{background:var(--warn)} .toast.bad::after{background:var(--bad)} .toast.rose::after{background:var(--rose)}
+@keyframes shrink{to{transform:scaleX(0)}}
+@media (max-width:1180px){.sysmap{grid-template-columns:repeat(3,minmax(0,1fr))}.mnode:not(:last-child)::after{display:none}.duo,.clients,.tokgrid,.qgrid,.aigrid{grid-template-columns:minmax(0,1fr)}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.facts,.kvg{grid-template-columns:repeat(2,minmax(0,1fr))}.flow5{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.bal,.sched{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.sysmap{grid-template-columns:repeat(2,minmax(0,1fr))}.tr{grid-template-columns:minmax(0,1fr)}}
+
+/* Toasts + mini clock */
+.toasts{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;display:flex;flex-direction:column-reverse;gap:8px;width:min(340px,calc(100vw - 28px));pointer-events:none}
+.toast{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--ink);border-radius:14px;padding:10px 12px;box-shadow:0 18px 36px -16px color-mix(in srgb,var(--ink) 50%,transparent);font-size:12.5px;animation:slidein .3s ease}
+.toast b{display:block;font-size:13.5px;margin-bottom:2px}
+.toast .who{font:700 10px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.toast.ok{border-left-color:var(--ok)} .toast.warn{border-left-color:var(--warn)} .toast.bad{border-left-color:var(--bad)} .toast.rose{border-left-color:var(--rose)}
+.miniclock{pointer-events:none;position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;gap:8px;background:var(--head);color:var(--head-ink);border-radius:999px;padding:8px 15px;font-size:12px;box-shadow:0 12px 24px -10px #000}
+.miniclock b{font:600 15px var(--f-mono)}
+.miniclock i{width:8px;height:8px;border-radius:50%;background:#7fd08f}
+.miniclock.off i{background:#f07a73}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:1180px){.main{grid-template-columns:minmax(0,1fr)}.trio{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.trio>:first-child{grid-column:1/-1}}
+@media (max-width:820px){.ledgers{grid-template-columns:minmax(0,1fr)}.trio{grid-template-columns:minmax(0,1fr)}.strip div{font-size:0}.clock .time{font-size:26px}.log div{grid-template-columns:80px minmax(0,1fr)}.log .src{display:none}.arrow{display:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="toprow">
+      <div class="brand">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 L37 20 L20 37 Z" fill="#eebccb"/><path d="M20 3 L3 20 L20 37 Z" fill="#8f8188"/><path d="M20 12 L28 20 L20 28 L12 20 Z" fill="#231e20"/></svg>
+        <div><div class="eyebrow">Apex National Bank · Tokenized deposits MVP</div><h1>Token Rail Simulator</h1><p>30 seconds = 1 hour · COBOL ledger open 9 AM–6 PM on weekdays · token rail open 24/7</p></div>
+      </div>
+      <div class="clock"><span class="time mono" id="clockTime">09:00</span><span class="day" id="clockDay">Mon 26 Oct 2026</span></div>
+    </div>
+    <div class="toprow">
+      <div class="status">
+        <span class="st" id="stLedger"><i></i>COBOL ledger <small id="stLedgerTxt">online</small></span>
+        <span class="st" id="stWire"><i></i>Fedwire <small id="stWireTxt">open</small></span>
+        <span class="st rail"><i></i>Token rail <small>live 24/7</small></span>
+        <span class="st"><i style="background:var(--blush)"></i>Next <small id="stNext">batch 12:00</small></span>
+      </div>
+      <div class="ctrls">
+        <button class="btn rose" id="btnDemo">▶ Guided demo</button>
+        <button class="btn" id="btnDemoStop" hidden>Stop demo</button>
+        <button class="btn" id="btnPause" aria-pressed="false">Pause</button>
+        <button class="btn" data-speed="1" aria-pressed="true">1×</button>
+        <button class="btn" data-speed="2" aria-pressed="false">2×</button>
+        <button class="btn" data-speed="4" aria-pressed="false">4×</button>
+        <button class="btn" id="btnClose">Jump to 5:55 PM</button>
+        <button class="btn" id="btnOpen">Jump to next 8:55 AM</button>
+        <button class="btn" id="btnReset">Reset</button>
+      </div>
+    </div>
+    <div class="strip" id="strip" aria-label="Today's 24 hours"></div>
+    <div class="legend"><span><i class="sw" style="background:#eebccb2e;border:1px solid #eebccb"></i>COBOL online</span><span><i class="sw" style="background:#ffffff12;border:1px solid #ffffff30"></i>COBOL offline, token rail still live</span><span><i class="sw" style="background:#eebccb;width:3px"></i>Batch run at 12:00 · 15:00 · 18:00 (plus a 9 AM catch-up)</span></div>
+  </header>
+
+  <section class="card pipe" aria-label="What is happening now">
+    <div class="stages" id="stages"></div>
+    <div class="narr" id="narr" aria-live="polite"><b>Ready.</b> It's Monday 9 AM and the bank is open. Start with the guided demo, tokenize in the Tokenization tab, or try something from the test data sheet.</div>
+  </section>
+
+  <nav class="nav" id="nav" role="tablist" aria-label="Simulator sections">
+    <button type="button" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+    <button type="button" role="tab" data-tab="clients" aria-selected="false">Clients <span class="cnt" id="navC">12</span></button>
+    <button type="button" role="tab" data-tab="tokenize" aria-selected="false">Tokenization</button>
+    <button type="button" role="tab" data-tab="queue" aria-selected="false">Event queue <span class="cnt" id="navQ">0</span></button>
+    <button type="button" role="tab" data-tab="logs" aria-selected="false">Transaction logs <span class="cnt" id="navL">0</span></button>
+    <button type="button" role="tab" data-tab="ai" aria-selected="false">AI compliance agent <span class="cnt bad" id="navAI" hidden>0</span></button>
+    <span class="busy" id="busyChip" hidden><i></i><span id="busyTxt">Processing…</span></span>
+  </nav>
+
+  <!-- ============ OVERVIEW ============ -->
+  <div class="view" data-view="overview">
+    <div class="tiles" id="tiles"></div>
+
+    <section class="card">
+      <h2>System architecture, live</h2>
+      <p class="sub">Every box is a real Token Rail component. A box lights up while a request passes through it; the line under it shows that component's state right now.</p>
+      <div class="sysmap" id="sysmap"></div>
+    </section>
+
+    <div class="main">
+      <section class="card" aria-label="Make a payment">
+        <h2>Quick actions · make a payment</h2>
+        <p class="sub">You are the client's treasury team. Pick who is sending, what to do, and who is pressing the button.</p>
+        <form class="form" id="opForm" novalidate>
+          <label class="f" for="selFrom">From client<select id="selFrom"></select></label>
+          <div class="tabs" role="tablist" id="tabs">
+            <button type="button" role="tab" data-op="tokenize" aria-selected="true">Tokenize</button>
+            <button type="button" role="tab" data-op="transfer" aria-selected="false">Pay</button>
+            <button type="button" role="tab" data-op="redeem" aria-selected="false">Redeem</button>
+            <button type="button" role="tab" data-op="wire" aria-selected="false">Wire out</button>
+          </div>
+          <label class="f" id="toWrap" for="selTo" hidden>To<select id="selTo"></select></label>
+          <label class="f" for="inAmt">Amount (USD)<input type="number" id="inAmt" min="0" step="any" inputmode="decimal" value="5000000"></label>
+          <div class="quick" id="quickAmt"><button type="button" data-a="2500">$2,500</button><button type="button" data-a="250000">$250K</button><button type="button" data-a="1000000">$1M</button><button type="button" data-a="5000000">$5M</button><span class="amtread mono" id="amtRead">= $5M</span></div>
+          <label class="f" for="selBy">Initiated by<select id="selBy">
+            <option value="treasurer">Authorised treasurer (no limit)</option>
+            <option value="analyst">Junior analyst (limit $250K)</option>
+            <option value="unknown">Unrecognised user or device</option></select></label>
+          <p class="hint" id="opHint"></p>
+          <button class="btn primary go" type="submit" id="btnRun">Tokenize</button>
+        </form>
+        <label class="f" for="selPace" style="margin-top:12px">Animation speed<select id="selPace"><option value="900">Step by step (for presenting)</option><option value="350">Quick</option></select></label>
+      </section>
+
+      <section class="ledgers" aria-label="Live ledgers">
+        <div class="col" id="colCobol">
+          <div class="colhead"><div><h3>COBOL core ledger</h3><small>Apex's book of record. Updates in batches.</small></div><span class="badge b-on" id="cobBadge">Online</span></div>
+          <div><div class="eyebrow">Omnibus reserve (backs every token)</div><div class="big" id="cobReserve">$0</div></div>
+          <div class="kv"><span>Client deposits (bank balances)</span><b id="cobDeposits">$0</b></div>
+          <div class="kv"><span>Token records last booked</span><b id="cobLast">—</b></div>
+          <div class="eyebrow">Latest ledger entries</div>
+          <div class="feed" id="cobFeed"></div>
+          <div class="eyebrow">Sent to other banks (Fedwire)</div>
+          <div class="feed" id="extFeed" style="max-height:120px"></div>
+        </div>
+        <div class="col" id="colQueue">
+          <div class="colhead"><div><h3>Event queue</h3><small>The bridge. Holds blockchain activity until COBOL can book it.</small></div><span class="badge b-rail" id="qBadge">0 waiting</span></div>
+          <div class="feed" id="qFeed" style="max-height:260px"></div>
+          <div class="eyebrow" id="lastBatchTitle">Last batch</div>
+          <div class="feed" id="batchFeed" style="max-height:220px"></div>
+        </div>
+        <div class="col" id="colChain">
+          <div class="colhead"><div><h3>Apex blockchain</h3><small>Token ownership. Live 24/7, settles in seconds.</small></div><span class="badge b-rail">Live</span></div>
+          <div><div class="eyebrow">Tokens in circulation</div><div class="big" id="chainSupply">$0</div></div>
+          <div class="kv"><span>Blocks recorded</span><b id="chainCount">0</b></div>
+          <div class="eyebrow">Latest blocks</div>
+          <div class="feed" id="chainFeed"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="duo">
+      <section class="card">
+        <h2>Live system trace</h2>
+        <p class="sub">Each backend step of the current (or last) operation, in order, with the component that handled it.</p>
+        <div class="trace" id="trace"></div>
+      </section>
+      <section class="card">
+        <h2>Shortcuts &amp; notifications</h2>
+        <p class="sub">Jump to a part of the system. Every success or error message is also kept here.</p>
+        <div class="qa">
+          <button type="button" class="btn" data-qa="tokenize">Tokenize deposits</button>
+          <button type="button" class="btn" data-qa="clients">View clients</button>
+          <button type="button" class="btn" data-qa="recon">Run reconciliation</button>
+          <button type="button" class="btn" data-qa="dup">Send duplicate event</button>
+          <button type="button" class="btn" data-qa="golden">Run golden dataset</button>
+        </div>
+        <div class="eyebrow" style="margin-top:14px">Recent notifications</div>
+        <div class="notes" id="notes"></div>
+      </section>
+    </div>
+
+    <details class="card" open>
+      <summary><div><h2>Test data sheet</h2><p class="sub" style="margin-bottom:0">Press Fill to load a case into "Quick actions", then send it. Watch the time: some need the bank open, some need it closed.</p></div></summary>
+      <div class="tests" id="tests" style="margin-top:12px"></div>
+    </details>
+  </div>
+
+  <!-- ============ CLIENTS ============ -->
+  <div class="view" data-view="clients" hidden>
+    <div class="clients">
+      <section class="card">
+        <h2>All clients</h2>
+        <p class="sub"><b>Bank balance</b> lives in COBOL; <b>tokens</b> live on the blockchain. Pick a client to open its profile.</p>
+        <input type="search" class="search" id="cSearch" placeholder="Search by name, ID or segment" aria-label="Search clients">
+        <div class="segs" id="cSegs"></div>
+        <p class="hint" id="clientCount"></p>
+        <div class="clist" id="clientList"></div>
+      </section>
+      <section class="card" id="profile" aria-live="polite"></section>
+    </div>
+  </div>
+
+  <!-- ============ TOKENIZATION ============ -->
+  <div class="view" data-view="tokenize" hidden>
+    <div class="tokgrid">
+      <section class="card">
+        <h2>Tokenize deposits</h2>
+        <p class="sub">Moves part of a client's COBOL bank balance into the omnibus reserve, then mints the same amount of tokens on the blockchain. Only possible while COBOL can lock the dollars.</p>
+        <form class="form" id="tkForm" novalidate>
+          <label class="f" for="tkClient">Client<select id="tkClient"></select></label>
+          <label class="f" for="tkAmt">Amount (USD)<input type="number" id="tkAmt" min="0" step="any" inputmode="decimal" value="5000000"></label>
+          <div class="quick" id="tkQuick"><button type="button" data-a="250000">$250K</button><button type="button" data-a="1000000">$1M</button><button type="button" data-a="5000000">$5M</button><button type="button" data-a="20000000">$20M</button><span class="amtread mono" id="tkRead">= $5M</span></div>
+          <label class="f" for="tkBy">Initiated by<select id="tkBy">
+            <option value="treasurer">Authorised treasurer</option>
+            <option value="analyst">Junior analyst</option>
+            <option value="unknown">Unrecognised user or device</option></select></label>
+          <div class="elig" id="tkElig"></div>
+          <button class="btn primary go" type="submit" id="btnTok">Tokenize</button>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Result</h2>
+        <div id="tkResult"></div>
+        <div class="eyebrow" style="margin-top:14px">Backend steps</div>
+        <div class="trace" id="tkTrace" style="max-height:300px"></div>
+      </section>
+    </div>
+    <section class="card">
+      <h2>How 1:1 backing is kept</h2>
+      <p class="sub">The same five steps run for every tokenization. If any step fails, nothing after it happens and no money moves.</p>
+      <div class="flow5">
+        <div><b>1 · Gateway</b>Checks who is asking and that the form is valid.</div>
+        <div><b>2 · Transaction control</b>Asks COBOL to lock the dollars, so they can't be spent twice.</div>
+        <div><b>3 · COBOL ledger</b>Moves the dollars from the client's balance into the omnibus reserve.</div>
+        <div><b>4 · Tokenization service</b>Smart contract mints tokens ≤ dollars locked.</div>
+        <div><b>5 · Event queue</b>Records the mint; COBOL's token record updates at the next batch.</div>
+      </div>
+      <div class="eyebrow" style="margin-top:14px">Tokenizations this session</div>
+      <div class="tablewrap"><table id="tkHist"></table></div>
+    </section>
+  </div>
+
+  <!-- ============ EVENT QUEUE ============ -->
+  <div class="view" data-view="queue" hidden>
+    <div class="qgrid">
+      <div>
+        <section class="card">
+          <h2>Event queue · middleware</h2>
+          <p class="sub">Every blockchain movement becomes an event. Events wait here until the COBOL ledger is online and the next batch runs. Each event carries an idempotency key (its block hash), so it can only ever be booked once.</p>
+          <div id="qBanner"></div>
+          <div class="eyebrow">Today's processing windows</div>
+          <div class="sched" id="qSched"></div>
+          <div class="eyebrow">Pending ledger updates</div>
+          <div class="tablewrap"><table id="qPending"></table></div>
+          <div class="qa" style="margin-top:12px"><button type="button" class="btn" id="btnDup">Send a duplicate event (idempotency test)</button></div>
+        </section>
+        <section class="card">
+          <h2>Processed events</h2>
+          <p class="sub">What each batch did with each event: posted to COBOL, replayed from the blockchain log, or ignored as a duplicate.</p>
+          <div class="tablewrap"><table id="qDone"></table></div>
+        </section>
+      </div>
+      <div>
+        <section class="card" aria-label="Reconciliation">
+          <h2>Reconciliation engine</h2>
+          <p class="sub">At every batch we check three things agree: the blockchain, COBOL's record (plus what's still queued), and the reserve.</p>
+          <div id="recon"></div>
+          <label class="toggle" for="chkDrop"><input type="checkbox" id="chkDrop"><span><b>Fault test:</b> lose the next event on its way to the queue, so reconciliation has a break to catch.</span></label>
+          <button class="btn" id="btnRecon" style="margin-top:10px">Run reconciliation now</button>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TRANSACTION LOGS ============ -->
+  <div class="view" data-view="logs" hidden>
+    <section class="card">
+      <div class="cardhead"><div><h2>Transaction log</h2><p class="sub">Persistent, timestamped audit trail of tokenizations, payments, batches, reconciliation and failures. It survives Reset and page reloads (stored in this browser).</p></div>
+        <div class="acts"><button type="button" class="btn" id="btnAuditCsv">Copy as CSV</button><button type="button" class="btn" id="btnAuditClear">Clear log</button></div></div>
+      <div class="filters"><div class="segs" id="aFilt"></div><input type="search" class="search" id="aSearch" placeholder="Search description, client or reference" aria-label="Search log"></div>
+      <div class="tablewrap"><table id="auditTable"></table></div>
+      <p class="hint" id="auditSum" style="margin-top:8px"></p>
+    </section>
+    <section class="card">
+      <h2>System trace</h2>
+      <p class="sub">Component-by-component activity, newest first, in simulation time.</p>
+      <div class="log" id="log"></div>
+    </section>
+  </div>
+
+  <!-- ============ AI COMPLIANCE AGENT ============ -->
+  <div class="view" data-view="ai" hidden>
+    <div class="aigrid">
+      <section class="card">
+        <h2>How the agent analysed this payment</h2>
+        <p class="sub">The agent retrieves data and policy, applies fixed rules, scores the risk factors, then decides and explains. It recommends; a person decides every hold. It never moves money.</p>
+        <div id="analysis"></div>
+      </section>
+      <div class="aiside">
+        <section class="card" aria-label="AI security check">
+          <h2>Latest verdict</h2>
+          <div class="decision" id="decision"></div>
+          <div class="eyebrow" style="margin-top:14px">Security alerts</div>
+          <div class="alerts" id="alerts"></div>
+        </section>
+        <section class="card" aria-label="Analyst review">
+          <h2>Analyst review</h2>
+          <p class="sub">Payments the AI held. Only a compliance analyst can release or reject them.</p>
+          <div class="holds" id="holds"></div>
+        </section>
+      </div>
+    </div>
+    <section class="card">
+      <h2>Screening history</h2>
+      <p class="sub">Every request the agent checked this session. Click a row to open its full analysis.</p>
+      <div class="tablewrap"><table id="aiHist"></table></div>
+    </section>
+    <details class="card" id="goldCard">
+      <summary><div><h2>Golden dataset · the AI's exam</h2><p class="sub" style="margin-bottom:0">15 fixed cases with the answer a compliance officer would give. Nothing moves; it grades the AI's reasoning.</p></div></summary>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0"><button class="btn primary" id="btnGolden">Run golden dataset</button><button class="btn" id="btnCsv">Copy as CSV</button></div>
+      <div class="tablewrap"><table id="goldTable"></table></div>
+      <p class="hint" id="goldSum" style="margin-top:8px"></p>
+    </details>
+  </div>
+
+  <p class="foot">All clients, payees, the sanctions entry and every amount are fictional. Thresholds are illustrative design choices.</p>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="miniclock" id="mini" aria-hidden="true"><b id="mTime">09:00</b><span id="mDay">Mon</span><i></i><span id="mState">COBOL online</span></div>
+
+<script>
+(function(){
+"use strict";
+const BASE=Date.UTC(2026,9,26), DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MIN_PER_SEC=2; // 30 real seconds = 60 simulated minutes
+const ANALYST_LIMIT=250000;
+const SEED=[
+ {id:'C01',name:'Meridian Bulk Shipping',seg:'Shipping',ledger:48e6,tokens:6e6,typical:1.2e6,cps:['C02','C03','C04'],kyc:'Current',flags:[]},
+ {id:'C02',name:'Coral Strait Lines',seg:'Shipping',ledger:31e6,tokens:3e6,typical:8e5,cps:['C01','C03'],kyc:'Current',flags:[]},
+ {id:'C03',name:'Harborline Freight',seg:'Shipping',ledger:15e6,tokens:9e6,typical:6e5,cps:['C01','C02'],kyc:'Current',flags:[]},
+ {id:'C04',name:'Northgate Realty REIT',seg:'Real estate',ledger:65e6,tokens:10e6,typical:2.5e6,cps:['C05','C06'],kyc:'Current',flags:[]},
+ {id:'C05',name:'Palmetto Title & Escrow',seg:'Real estate',ledger:18e6,tokens:4e6,typical:1.5e6,cps:['C04','C06'],kyc:'Current',flags:[]},
+ {id:'C06',name:'Biscayne Properties',seg:'Real estate',ledger:40e6,tokens:5e6,typical:2e6,cps:['C04','C05'],kyc:'Current',flags:[]},
+ {id:'C07',name:'Lantern Peak Asset Mgmt',seg:'Asset manager',ledger:90e6,tokens:15e6,typical:5e6,cps:['C08','C09'],kyc:'Current',flags:[]},
+ {id:'C08',name:'Copperfield Capital',seg:'Asset manager',ledger:55e6,tokens:8e6,typical:3e6,cps:['C07','C06'],kyc:'Current',flags:[]},
+ {id:'C09',name:'Ridgeway Index Advisors',seg:'Asset manager',ledger:70e6,tokens:0,typical:4e6,cps:['C07'],kyc:'Current',flags:['No tokens yet']},
+ {id:'C10',name:'Bellwether Trade Finance',seg:'Trade finance',ledger:25e6,tokens:4e6,typical:4e5,cps:['C03','X03'],kyc:'Current',flags:[]},
+ {id:'C11',name:'Kestrel Bay Trading',seg:'Trade finance',ledger:9e6,tokens:1e6,typical:2.5e5,cps:['C01'],kyc:'Refresh overdue',flags:['KYC overdue']},
+ {id:'C12',name:'Halden Shell Ventures',seg:'Holding co.',ledger:1.5e6,tokens:0,typical:5e4,cps:[],kyc:'Current',flags:['Opened 12 days ago'],newAccount:true}
+];
+const PAYEES=[
+ {id:'X01',name:'Volna Maritime Holdings',country:'Panama',bank:'Offshore Bank',sanctioned:true,note:'matches a (simulated) OFAC sanctions entry'},
+ {id:'X02',name:'Ayeyar Commodities',country:'Myanmar',bank:'Yangon Bank',highRisk:true,note:'FATF high-risk country'},
+ {id:'X03',name:'Gulfstream Steel Supply',country:'US',bank:'Houston Bank'},
+ {id:'X04',name:'Dockside Insurance',country:'US',bank:'Jacksonville Bank'}
+];
+const BY={treasurer:'Authorised treasurer',analyst:'Junior analyst',unknown:'Unrecognised device'};
+
+/* ---------- state ---------- */
+let S;
+function fresh(){
+  const customers=SEED.map(c=>Object.assign({},c,{cps:c.cps.slice(),flags:c.flags.slice(),shadow:c.tokens,memoHold:0}));
+  return {t:9*60,speed:1,running:true,customers,reserve:customers.reduce((a,c)=>a+c.tokens,0),pendingRedeem:0,
+    queue:[],chain:[],history:[],holds:[],alerts:[],entries:[],ext:{},lastBatch:null,cobLast:null,log:[],dropNext:false,
+    recon:{at:null,exceptions:[]},seq:1,op:'tokenize',
+    processed:[],doneKeys:new Set(),screens:[],trace:[],lastTok:null};
+}
+S=fresh();
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const cust=id=>S.customers.find(c=>c.id===id);
+const ent=id=>cust(id)||PAYEES.find(p=>p.id===id);
+const dayOf=t=>Math.floor(t/1440), dowOf=t=>dayOf(t)%7, hourOf=t=>Math.floor((t%1440)/60);
+const isOnline=t=>dowOf(t)<5&&hourOf(t)>=9&&hourOf(t)<18;
+function money(n,full){ if(full) return '$'+Math.round(n).toLocaleString('en-US'); const a=Math.abs(n),s=n<0?'-':'';
+  if(a>=1e9) return s+'$'+(a/1e9).toFixed(2)+'B'; if(a>=1e6) return s+'$'+(+(a/1e6).toFixed(2))+'M'; if(a>=1e3) return s+'$'+(+(a/1e3).toFixed(1))+'K'; return s+'$'+a.toFixed(0); }
+function hhmm(t){ const m=Math.floor(t%1440); return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function dayLabel(t){ const d=new Date(BASE+dayOf(t)*864e5); return DAYS[dowOf(t)]+' '+d.getUTCDate()+' '+MONTHS[d.getUTCMonth()]+' '+d.getUTCFullYear(); }
+function shortDay(t){ const d=new Date(BASE+dayOf(t)*864e5); return DAYS[dowOf(t)]+' '+d.getUTCDate()+' '+MONTHS[d.getUTCMonth()]; }
+const stamp=t=>shortDay(t)+' '+hhmm(t);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function hash(){ const h=((S.seq++)*2654435761>>>0).toString(16).padStart(8,'0'); return '0x'+h.slice(0,6)+'…'+h.slice(-3); }
+function nextOpen(t){ let x=dayOf(t)*1440+540; if(x<=t) x+=1440; while(dowOf(x)>4) x+=1440; return shortDay(x)+' 09:00'; }
+function nextBatch(t){ for(let k=1;k<=24*8;k++){ const h=Math.floor(t/60)+k, x=h*60, hh=h%24; if(dowOf(x)<5&&[9,12,15,18].includes(hh)) return (hh===9?'9 AM catch-up ':hh===18?'end-of-day batch ':'batch ')+shortDay(x)+' '+String(hh).padStart(2,'0')+':00'; } return '—'; }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+let pace=900;
+/* ---------- audit log (persistent) ---------- */
+const AKEY='apexTR.audit.v1';
+let AUDIT=[], SESSION=1, aseq=1, aCat='All', aQ='', clearArm=0;
+try{ const raw=localStorage.getItem(AKEY); if(raw){ const o=JSON.parse(raw); if(o&&Array.isArray(o.items)){ AUDIT=o.items; SESSION=(o.session||0)+1; } } }catch(_){}
+function saveAudit(){ try{ localStorage.setItem(AKEY,JSON.stringify({session:SESSION,items:AUDIT.slice(0,1500)})); }catch(_){} }
+function audit(cat,status,desc,o){ o=o||{};
+  AUDIT.unshift({id:'A'+SESSION+'-'+String(aseq++).padStart(4,'0'),s:SESSION,t:S.t,real:Date.now(),cat,status,desc,amt:o.amt||0,ref:o.ref||'',comp:o.comp||'',cids:o.cids||[]});
+  if(AUDIT.length>1500) AUDIT.length=1500; saveAudit(); renderAudit(); }
+const FAILS=['Rejected','Blocked','Failed','Break'];
+const ACATS=['All','Tokenization','Payment','Redemption','Wire','Batch','Reconciliation','Compliance','System','Failures'];
+function stCls(s){ return ['Success','Settled','Posted','Matched','Released','Replayed'].includes(s)?'t-ok':['Queued','Held','Duplicate ignored'].includes(s)?'t-warn':FAILS.includes(s)?'t-bad':'t-grey'; }
+function renderAudit(){ if(!$('auditTable')) return; const q=aQ.trim().toLowerCase();
+  const rows=AUDIT.filter(a=>(aCat==='All'||(aCat==='Failures'?FAILS.includes(a.status):a.cat===aCat))&&(!q||(a.desc+' '+a.ref+' '+a.id+' '+a.cat+' '+a.status+' '+a.comp).toLowerCase().includes(q)));
+  $('auditTable').innerHTML='<thead><tr><th>Sim time</th><th>Logged</th><th>Category</th><th>Status</th><th>What happened</th><th class="r">Amount</th><th>Component</th><th>Ref</th></tr></thead><tbody>'+
+    (rows.slice(0,300).map(a=>'<tr><td class="mono" style="white-space:nowrap">'+stamp(a.t)+(a.s!==SESSION?'<br><span class="tag t-grey">session '+a.s+'</span>':'')+'</td><td class="mono" style="white-space:nowrap;color:var(--muted)">'+new Date(a.real).toLocaleTimeString()+'</td><td>'+esc(a.cat)+'</td><td><span class="tag '+stCls(a.status)+'">'+esc(a.status)+'</span></td><td>'+esc(a.desc)+'</td><td class="r mono">'+(a.amt?money(a.amt,true):'—')+'</td><td style="white-space:nowrap">'+esc(a.comp)+'</td><td class="mono" style="font-size:11px;color:var(--muted)">'+esc(a.ref||a.id)+'</td></tr>').join('')||'<tr><td colspan="8"><div class="empty">No entries match.</div></td></tr>')+'</tbody>';
+  const ses=new Set(AUDIT.map(a=>a.s)).size;
+  $('auditSum').textContent=rows.length+' shown · '+AUDIT.length+' total across '+ses+' session(s) · this session: '+AUDIT.filter(a=>a.s===SESSION).length+'. Newest first.';
+  $('aFilt').innerHTML=ACATS.map(c=>'<button type="button" data-af="'+c+'" aria-pressed="'+(c===aCat)+'">'+c+'</button>').join('');
+  $('navL').textContent=AUDIT.filter(a=>a.s===SESSION).length; }
+function auditCsv(){ const rows=[['id','session','sim_time','logged','category','status','description','amount_usd','component','ref']];
+  AUDIT.forEach(a=>rows.push([a.id,a.s,stamp(a.t),new Date(a.real).toISOString(),a.cat,a.status,a.desc,a.amt,a.comp,a.ref]));
+  return rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); }
+
+/* ---------- busy state + live trace ---------- */
+let busy=0, busyLabel='';
+function updBusy(){ const on=busy>0; $('busyChip').hidden=!on; $('busyTxt').textContent=busyLabel||'Processing…';
+  ['btnRun','btnTok'].forEach(id=>{ const b=$(id); if(b){ b.disabled=on; b.classList.toggle('loading',on); } }); renderTrace(); }
+const CNAME={client:'Client app',gateway:'API gateway',control:'Transaction control',agent:'AI agent',contract:'Tokenization service',chain:'Blockchain',queue:'Event queue',ledger:'COBOL ledger',recon:'Reconciliation'};
+function renderTrace(){ const tr=S.trace||[];
+  const html=tr.length?tr.slice(-40).map((s,i,arr)=>'<div class="tr'+(s.bad?' bad':'')+(busy&&i===arr.length-1?' now':'')+'"><span><span class="tag t-grey">'+esc(CNAME[s.k]||s.k)+'</span></span><div><b>'+esc(s.title)+'</b>'+(s.body?'<small>'+esc(s.body)+'</small>':'')+'</div><time>'+hhmm(s.t)+'</time></div>').join('')
+    :'<div class="empty">No operation yet. Run one and every backend step appears here.</div>';
+  ['trace','tkTrace'].forEach(id=>{ const e=$(id); if(e) e.innerHTML=html; }); }
+
+/* ---------- helpers for the new views ---------- */
+const backing=()=>{ const need=supply()+S.pendingRedeem; return need?S.reserve/need*100:100; };
+function snap(cid){ const c=cust(cid); return {bank:c.ledger-c.memoHold,tokens:c.tokens,reserve:S.reserve,supply:supply(),backing:backing()}; }
+function nextBatchAt(t){ for(let k=1;k<=24*8;k++){ const h=Math.floor(t/60)+k, x=h*60, hh=h%24; if(dowOf(x)<5&&[9,12,15,18].includes(hh)) return x; } return null; }
+function dur(m){ m=Math.max(0,Math.round(m)); const h=Math.floor(m/60), mm=m%60; return (h?h+'h ':'')+mm+'m'; }
+const KW={tokenize:'Tokenize',transfer:'Pay',redeem:'Redeem',wire:'Wire'};
+function evAmt(ev){ return ev.kind==='POST'?Object.values(ev.tx.deltas).reduce((a,v)=>a+Math.max(0,v),0)||Math.abs(Object.values(ev.tx.deltas)[0]||0):ev.amount; }
+const NOTES=[];
+function showTab(id){ document.querySelectorAll('[data-view]').forEach(p=>p.hidden=p.dataset.view!==id);
+  document.querySelectorAll('#nav [data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===id?'true':'false'));
+  try{ localStorage.setItem('apexTR.tab',id); }catch(_){} }
+
+/* ---------- AI: data retrieval + rule trace (mirrors evaluate's order) ---------- */
+function trace(tx,ctx){
+  const get=ctx.get, f=get(tx.from), to=tx.to?get(tx.to):null, by=tx.by||'treasurer', hist=ctx.hist, now=ctx.now, T=tx.kind, avail=f.ledger-(f.memoHold||0);
+  const D=[], q=(src,query,res,flag)=>D.push({src,query,res,flag:flag||'ok'});
+  q('Identity service','verify_initiator("'+BY[by]+'")',by==='unknown'?'Not on '+f.name+'\'s mandate · unrecognised user or device':'Recognised · on the client mandate',by==='unknown'?'bad':'ok');
+  q('COBOL ledger','ledger_status()',ctx.online?'Online · can lock dollars now':'Offline · next window '+nextOpen(now),ctx.online?'ok':'warn');
+  q('KYC / CDD store','kyc_record('+f.id+')',f.kyc+(f.newAccount?' · '+f.flags.join(', '):''),f.kyc==='Current'?(f.newAccount?'warn':'ok'):'bad');
+  if(T==='tokenize'||T==='wire') q('COBOL ledger','available_balance('+f.id+')',money(avail,true),tx.amount>avail?'bad':'ok');
+  if(T==='transfer'||T==='redeem') q('Blockchain','wallet_balance('+f.id+')',money(f.tokens,true)+' in tokens',tx.amount>f.tokens?'bad':'ok');
+  if(to){
+    q('Sanctions list','ofac_screen("'+to.name+'")',to.sanctioned?'MATCH · '+to.note:'No match',to.sanctioned?'bad':'ok');
+    if(to.country) q('Country risk list','fatf_lookup("'+to.country+'")',to.highRisk?'Listed · '+to.note:'Not listed',to.highRisk?'bad':'ok');
+    if(to.kyc) q('KYC / CDD store','kyc_record('+to.id+')',to.kyc+(to.newAccount?' · '+to.flags.join(', '):''),to.kyc!=='Current'?'bad':to.newAccount?'warn':'ok');
+  }
+  if(T==='transfer'||T==='wire'){
+    q('Entitlements','approver_limit("'+BY[by]+'")',by==='analyst'?money(ANALYST_LIMIT)+' per payment':'No limit',by==='analyst'&&tx.amount>ANALYST_LIMIT?'bad':'ok');
+    const r=tx.amount/f.typical; q('Behaviour profile','typical_payment('+f.id+')',money(f.typical)+' · this one is '+r.toFixed(1)+'×',r>10?'bad':r>3?'warn':'ok');
+    const known=f.cps.includes(tx.to)||hist.some(x=>x.from===tx.from&&x.to===tx.to&&x.t<=now);
+    q('Payment history','counterparty_seen('+f.id+' → '+to.id+')',known?'Known counterparty':'First payment to this recipient',known?'ok':'warn');
+    const recent=hist.filter(x=>x.from===tx.from&&now-x.t<=360&&x.t<=now).length;
+    q('Payment history','payments_out('+f.id+', last 6h)',recent+' earlier payment(s)',recent>=4?'bad':recent>=2?'warn':'ok');
+    const band=a=>a>=9e5&&a<1e6, nb=hist.filter(x=>x.from===tx.from&&band(x.amount)&&now-x.t<=1440&&x.t<=now).length;
+    q('Payment history','just_under_1M('+f.id+', last 24h)',nb+' earlier payment(s) between $900K and $1M',band(tx.amount)&&nb>=1?'bad':'ok');
+    const back=hist.find(x=>x.from===tx.to&&x.to===tx.from&&now-x.t<=360&&x.t<=now);
+    q('Payment history','reverse_flow('+to.id+' → '+f.id+', last 6h)',back?money(back.amount,true)+' came the other way':'None',back?'bad':'ok');
+  }
+  const R=[]; let hit=false;
+  const rule=(name,law,applies,trig,detail)=>{ if(!applies) return R.push({name,law,st:'na',detail:'Not applicable to this request'});
+    if(hit) return R.push({name,law,st:'skip',detail:'Not reached: an earlier rule already decided'});
+    if(trig){ hit=true; R.push({name,law,st:'trig',detail}); } else R.push({name,law,st:'pass',detail}); };
+  rule('Authorised initiator','FFIEC authentication',true,by==='unknown','Request must come from a person on the client mandate');
+  rule('Ledger online to lock dollars','1:1 backing rule',T==='tokenize',!ctx.online,'Tokens can only be minted while COBOL can lock the dollars');
+  rule('Enough bank balance','1:1 backing / balance rule',T==='tokenize'||T==='wire',tx.amount>avail,'Amount must be ≤ available bank balance');
+  rule('KYC current','FinCEN CDD rule',T==='tokenize',f.kyc!=='Current','Customer due diligence must be current');
+  rule('Enough tokens in wallet','Smart-contract balance rule',T==='redeem'||T==='transfer',tx.amount>f.tokens,'Amount must be ≤ wallet balance');
+  rule('Within approver limit','Maker-checker policy',T==='transfer'||T==='wire',by==='analyst'&&tx.amount>ANALYST_LIMIT,'Junior analyst limit is '+money(ANALYST_LIMIT));
+  rule('Sanctions screening','OFAC',T==='transfer'||T==='wire',!!(to&&to.sanctioned),'Recipient must not be on a sanctions list');
+  rule('KYC current (both parties)','FinCEN CDD rule',T==='transfer'||T==='wire',f.kyc!=='Current'||!!(to&&to.kyc&&to.kyc!=='Current'),'Sender and receiver checks must be current');
+  rule('High-risk jurisdiction','FATF list · enhanced due diligence',T==='transfer'||T==='wire',!!(to&&to.highRisk),'Recipient must not be in a FATF high-risk country');
+  return {D,R,scored:!hit&&(T==='transfer'||T==='wire'),online:ctx.online};
+}
+let aiSel=0, aiExt=null;
+function screen(tx){ const ctx=liveCtx(), tr=trace(tx,ctx), d=evaluate(tx,ctx), f=ent(tx.from), to=tx.to?ent(tx.to):null;
+  const rec={id:'SCR-'+String(S.screens.length+1).padStart(3,'0'),t:S.t,tx:Object.assign({},tx),d,tr,fromName:f.name,toName:to?to.name:''};
+  S.screens.unshift(rec); aiSel=0; aiExt=null;
+  log('AI','Screened '+rec.id+': retrieved '+tr.D.length+' data points, checked '+tr.R.filter(r=>r.st!=='na').length+' rules → '+d.decision+' (score '+d.score+').');
+  renderAI(); return d; }
+function txLabel(r){ return KW[r.tx.kind]+' '+money(r.tx.amount)+' · '+r.fromName+(r.toName?' → '+r.toName:''); }
+function analysisHtml(rec){
+  const tx=rec.tx, d=rec.d, tr=rec.tr, trig=tr.R.find(r=>r.st==='trig');
+  const stp={pass:'<span class="tag t-ok">Pass</span>',trig:'<span class="tag t-bad">Triggered</span>',na:'<span class="tag t-grey">N/A</span>',skip:'<span class="tag t-grey">Not reached</span>'};
+  const step=(n,t,sub,body)=>'<div class="astep"><i>'+n+'</i><div><h3>'+t+'</h3>'+(sub?'<p class="sub">'+sub+'</p>':'')+body+'</div></div>';
+  const pts=d.signals.filter(s=>typeof s.p==='number');
+  let h='<div class="ahead"><div><b class="mono">'+rec.id+'</b>'+(rec.label?' · '+esc(rec.label):'')+'<div class="hint">'+esc(txLabel(rec))+'</div></div><span class="pill p-'+d.decision+'">'+d.decision+(d.score?' · '+d.score:'')+'</span></div>';
+  h+=step(1,'Request received','The gateway passes the request to the agent before any money moves.',
+    '<div class="kvg"><div><span>Operation</span>'+esc({tokenize:'Tokenize',transfer:'Token payment',redeem:'Redeem (cash out)',wire:'Fedwire wire'}[tx.kind])+'</div><div><span>Amount</span><b class="mono">'+money(tx.amount,true)+'</b></div><div><span>From</span>'+esc(rec.fromName)+'</div><div><span>To</span>'+esc(rec.toName||'—')+'</div><div><span>Initiated by</span>'+esc(BY[tx.by||'treasurer'])+'</div><div><span>Sim time</span><span class="mono" style="font-size:12px;letter-spacing:0;text-transform:none;color:var(--ink)">'+stamp(rec.t)+'</span></div><div><span>COBOL ledger</span>'+(tr.online?'Online':'Offline')+'</div><div><span>Screening</span>'+(tr.scored?'Rules + risk score':'Rules only')+'</div></div>');
+  h+=step(2,'Policy &amp; data retrieval','The agent calls '+tr.D.length+' internal tools. Red and amber results feed the rules and the score.',
+    '<div class="tablewrap"><table><thead><tr><th></th><th>Source</th><th>Call</th><th>Result</th></tr></thead><tbody>'+tr.D.map(x=>'<tr><td><i class="fl '+x.flag+'"></i></td><td style="white-space:nowrap">'+esc(x.src)+'</td><td><code>'+esc(x.query)+'</code></td><td>'+esc(x.res)+'</td></tr>').join('')+'</tbody></table></div>');
+  h+=step(3,'Fixed rules (hard stops)',trig?'Rule "'+esc(trig.name)+'" triggered, so the decision is made here, with no score needed.':'No hard stop triggered.',
+    '<div class="tablewrap"><table><thead><tr><th>Rule</th><th>Policy / regulation</th><th>Result</th><th>Check</th></tr></thead><tbody>'+tr.R.map(r=>'<tr><td><b>'+esc(r.name)+'</b></td><td>'+esc(r.law)+'</td><td>'+stp[r.st]+'</td><td class="hint" style="font-size:12px">'+esc(r.detail)+'</td></tr>').join('')+'</tbody></table></div>');
+  h+=step(4,'Risk factors',tr.scored?'Each warning sign adds points. Context-only factors add 0.':(trig?'Skipped: a fixed rule already decided.':'Tokenize and redeem use rules only; there is no counterparty to score.'),
+    tr.scored?('<ul class="sig">'+(pts.length?pts.map(s=>'<li><b>'+(s.p>0?'+'+s.p:'0')+'</b><span>'+esc(s.l)+'<small>'+esc(s.d||'')+'</small></span></li>').join(''):'<li><b>0</b><span>No warning signs<small>Known counterparty, normal size, normal pace.</small></span></li>')+'<li><b>'+d.score+'</b><span><b>Total risk score</b><small>Capped at 100.</small></span></li></ul>'):'');
+  h+=step(5,'Risk score &amp; decision','Bands: 0–34 approve · 35–64 approve and monitor · 65+ hold for a person. Fixed rules can block, hold or reject directly.',
+    '<div class="scorebar"><i style="left:'+d.score+'%"></i></div><div class="scale"><span>0 approve</span><span>35 watch</span><span>65 hold</span><span>100</span></div><p style="margin:10px 0 0"><span class="pill p-'+d.decision+'">'+d.decision+'</span> <b style="margin-left:6px">'+esc(d.summary)+'</b></p>');
+  const sar=d.sar?('SAR DRAFT · for analyst review (not filed)\nSubject: '+rec.fromName+' ('+tx.from+')\nActivity: '+KW[tx.kind]+' '+money(tx.amount,true)+(rec.toName?' to '+rec.toName:'')+' at '+stamp(rec.t)+'\nIndicators: '+d.signals.filter(s=>s.p==='rule'||s.p>0).map(s=>s.l).join('; ')+'\nRisk score: '+d.score+'/100\nDeadline: file within 30 days of detection if confirmed (31 CFR 1020.320)'):'';
+  h+=step(6,'Explanation &amp; next step','What the analyst and an auditor see.',
+    (d.rules.length?'<p class="rules"><b>Rules applied:</b> '+d.rules.map(esc).join(' · ')+'</p>':'')+(d.action?'<p class="rules"><b>Next step:</b> '+esc(d.action)+'</p>':'')+'<p class="rules"><b>Agent limits:</b> it never moves or releases money, files reports or changes rules.</p>'+(sar?'<div class="sar">'+esc(sar)+'</div>':''));
+  return h; }
+function renderAI(){ if(!$('analysis')) return; const rec=aiExt||S.screens[aiSel];
+  $('analysis').innerHTML=rec?analysisHtml(rec):'<div class="empty">No request analysed yet. Send a payment, tokenize, or run a golden case, and the agent\'s full reasoning appears here.</div>';
+  $('aiHist').innerHTML=S.screens.length?'<thead><tr><th>ID</th><th>Sim time</th><th>Request</th><th>Initiated by</th><th class="r">Score</th><th>Decision</th></tr></thead><tbody>'+S.screens.map((r,i)=>'<tr class="click'+(!aiExt&&i===aiSel?' sel':'')+'" data-scr="'+i+'"><td class="mono">'+r.id+'</td><td class="mono" style="white-space:nowrap">'+stamp(r.t)+'</td><td>'+esc(txLabel(r))+'</td><td>'+esc(BY[r.tx.by||'treasurer'])+'</td><td class="r mono">'+r.d.score+'</td><td><span class="pill p-'+r.d.decision+'">'+r.d.decision+'</span></td></tr>').join('')+'</tbody>':'<tbody><tr><td><div class="empty">Nothing screened yet this session.</div></td></tr></tbody>';
+  $('navAI').hidden=!S.holds.length; $('navAI').textContent=S.holds.length; }
+
+/* ---------- overview ---------- */
+const MAP=[['client','Client app','Channel','--rose'],['gateway','API gateway','Middleware','--warn'],['control','Transaction control','Middleware','--warn'],['agent','AI compliance agent','AI','--ok'],['contract','Tokenization service','Token layer','--chain'],['chain','Permissioned blockchain','Token layer','--chain'],['queue','Event queue','Middleware','--warn'],['ledger','COBOL core ledger','Legacy core','--cobol'],['recon','Reconciliation engine','Control','--ok']];
+function drawMap(){ $('sysmap').innerHTML=MAP.map(m=>'<div class="mnode" id="mp-'+m[0]+'" style="--c:var('+m[3]+')"><span class="ly">'+m[2]+'</span><b>'+m[1]+'</b><span id="mv-'+m[0]+'">—</span></div>').join(''); }
+function renderMap(){ const on=isOnline(S.t), last=S.screens[0], ac=cust($('selFrom').value);
+  const v={client:ac?'Acting: '+ac.name:'—',gateway:'Auth · routing · 4 client APIs',control:'Funds lock · no double-spend'+(S.customers.some(c=>c.memoHold)?' · '+money(S.customers.reduce((a,c)=>a+c.memoHold,0))+' set aside':''),
+    agent:last?'Last: '+last.d.decision+(last.d.score?' · '+last.d.score:'')+' · '+S.screens.length+' screened':'Idle · 0 screened',contract:'Supply '+money(supply()),chain:S.chain.length+' blocks · live 24/7',
+    queue:S.queue.length+' waiting'+(S.queue.length?' · '+(on?'next batch':'next business day'):''),ledger:(on?'Online':'Offline')+' · reserve '+money(S.reserve),recon:'Backing '+backing().toFixed(2)+'%'+(S.recon.exceptions.length?' · '+S.recon.exceptions.length+' break(s)':'')};
+  MAP.forEach(m=>{ const e=$('mv-'+m[0]); if(e) e.textContent=v[m[0]]; }); }
+function renderTiles(){ const on=isOnline(S.t), nb=nextBatchAt(S.t), b=backing(), ex=S.recon.exceptions.length;
+  const T=[[on?'ok':'bad','COBOL ledger',on?'Online':'Offline',on?'Next: '+nextBatch(S.t):'Reopens '+nextOpen(S.t)],
+   ['rose','Omnibus reserve',money(S.reserve),'Dollars locked behind tokens'],
+   ['rose','Tokens in circulation',money(supply()),S.customers.filter(c=>c.tokens>0).length+' clients hold tokens'],
+   [b>=99.995?'ok':'bad','Backing ratio',b.toFixed(2)+'%','Reserve ÷ tokens owed (target 100%)'],
+   [S.queue.length?'warn':'ok','Event queue',S.queue.length+' waiting',nb!==null?'Next processing in '+dur(nb-S.t)+' (sim)':'—'],
+   [S.holds.length?'bad':'ok','Held for review',String(S.holds.length),S.screens.length+' requests screened by AI'],
+   [ex?'bad':'ok','Reconciliation',S.recon.at===null?'Not run':ex?ex+' break(s)':'Matched',S.recon.at===null?'Runs at every batch':'Last run '+stamp(S.recon.at)],
+   ['grey','Blockchain',S.chain.length+' blocks',S.chain[0]?'Last block '+stamp(S.chain[0].t):'No blocks yet']];
+  $('tiles').innerHTML=T.map(x=>'<div class="tile '+x[0]+'"><span class="lab">'+x[1]+'</span><span class="val">'+esc(x[2])+'</span><small>'+esc(x[3])+'</small></div>').join(''); }
+function renderNotes(){ const e=$('notes'); if(!e) return; e.innerHTML=NOTES.slice(0,14).map(n=>'<div class="note '+(n.kind||'')+'"><small>'+esc(n.who)+' · '+n.at+'</small><b>'+esc(n.title)+'</b>'+(n.body?'<div>'+esc(n.body)+'</div>':'')+'</div>').join('')||'<div class="empty">No notifications yet.</div>'; }
+
+/* ---------- clients ---------- */
+let selClient='C09', cSearch='', cSeg='All';
+function renderProfile(){ const c=cust(selClient); if(!c){ $('profile').innerHTML='<div class="empty">Pick a client.</div>'; return; }
+  const conv=c.ledger-c.memoHold, pend=c.tokens-c.shadow, acting=$('selFrom').value===c.id;
+  const hist=AUDIT.filter(a=>a.s===SESSION&&a.cids.includes(c.id)).slice(0,40);
+  const cps=c.cps.map(id=>ent(id)).filter(Boolean).map(x=>x.name);
+  $('profile').innerHTML='<div class="prof-h"><div><div class="eyebrow">'+c.id+' · '+esc(c.seg)+(acting?' · acting client':'')+'</div><h2>'+esc(c.name)+'</h2><div style="margin-top:6px">'+(c.kyc==='Current'?'<span class="tag t-ok">KYC current</span>':'<span class="tag t-bad">KYC refresh overdue</span>')+c.flags.filter(f=>!/KYC/.test(f)).map(f=>'<span class="tag t-warn">'+esc(f)+'</span>').join('')+'</div></div>'+
+   '<div class="qa"><button type="button" class="btn primary" data-pa="tokenize">Tokenize for this client</button><button type="button" class="btn" data-pa="transfer">Pay from this client</button><button type="button" class="btn" data-pa="redeem">Redeem tokens</button></div></div>'+
+   '<div class="bal"><div class="cb"><span>Bank balance · COBOL</span><b>'+money(conv,true)+'</b><small>'+(c.memoHold?money(c.memoHold,true)+' set aside for a queued wire':'Available to tokenize or wire')+'</small></div>'+
+   '<div class="ct"><span>Tokens · blockchain</span><b>'+money(c.tokens,true)+'</b><small>'+(S.reserve?(c.tokens/S.reserve*100).toFixed(1)+'% of the reserve':'—')+'</small></div>'+
+   '<div style="background:'+(Math.abs(pend)>.5?'var(--warn-soft)':'var(--ok-soft)')+'"><span>COBOL token record</span><b>'+money(c.shadow,true)+'</b><small>'+(Math.abs(pend)>.5?(pend>0?'+':'−')+money(Math.abs(pend),true)+' waiting to book at the '+nextBatch(S.t):'In sync with the blockchain')+'</small></div></div>'+
+   '<div class="facts"><div><span>Typical payment</span><b class="mono">'+money(c.typical)+'</b></div><div><span>Known counterparties</span>'+esc(cps.join(', ')||'None yet')+'</div><div><span>Total value at Apex</span><b class="mono">'+money(c.ledger+c.tokens)+'</b></div><div><span>Screened requests</span>'+S.screens.filter(r=>r.tx.from===c.id||r.tx.to===c.id).length+'</div></div>'+
+   '<div class="eyebrow">Transaction history (this session)</div><div class="tablewrap"><table><thead><tr><th>Sim time</th><th>Category</th><th>Status</th><th>What happened</th><th class="r">Amount</th></tr></thead><tbody>'+
+   (hist.map(a=>'<tr><td class="mono" style="white-space:nowrap">'+stamp(a.t)+'</td><td>'+esc(a.cat)+'</td><td><span class="tag '+stCls(a.status)+'">'+esc(a.status)+'</span></td><td>'+esc(a.desc)+'</td><td class="r mono">'+(a.amt?money(a.amt,true):'—')+'</td></tr>').join('')||'<tr><td colspan="5"><div class="empty">No activity for this client yet.</div></td></tr>')+'</tbody></table></div>'; }
+
+/* ---------- tokenization tab ---------- */
+let tkPending=false;
+function renderTok(){ if(!$('tkElig')) return; const c=cust($('tkClient').value)||S.customers[0], amt=Math.round(+$('tkAmt').value)||0, on=isOnline(S.t), avail=c.ledger-c.memoHold, by=$('tkBy').value;
+  $('tkRead').textContent=amt>0?'= '+money(amt,true):'enter an amount';
+  const ck=[['COBOL ledger online',on,on?'Can lock the dollars now':'Closed · reopens '+nextOpen(S.t)],['Authorised initiator',by!=='unknown',BY[by]],['Enough bank balance',amt>0&&amt<=avail,'Available '+money(avail,true)],['KYC current',c.kyc==='Current',c.kyc]];
+  const ok=ck.every(x=>x[1]);
+  $('tkElig').innerHTML='<div class="eyebrow">Eligibility check · live</div>'+ck.map(x=>'<div class="chk"><span>'+(x[1]?'<b class="st-ok">✓</b>':'<b class="st-bad">✗</b>')+' '+x[0]+'</span><small>'+esc(x[2])+'</small></div>').join('')+
+   '<div class="chk" style="border-top:1px dashed var(--line);padding-top:6px"><span>Tokens held now</span><small class="mono">'+money(c.tokens,true)+'</small></div>'+
+   '<p class="hint" style="margin-top:4px">'+(ok?'<b class="st-ok">Eligible.</b> Up to '+money(avail,true)+' can be tokenized.':'<b class="st-bad">Not eligible right now.</b> You can still send it to see exactly how the system rejects it.')+'</p>';
+  const L=S.lastTok, r=$('tkResult');
+  if(tkPending){ r.innerHTML='<div class="res wait"><h3><span class="spin" style="color:var(--rose)"></span>Processing tokenization…</h3><p class="hint">'+esc(busyLabel||'Waiting for the system')+'</p></div>'; }
+  else if(!L){ r.innerHTML='<div class="res"><h3>No tokenization yet</h3><p class="hint">Pick a client and amount, then press Tokenize. The confirmation, balances before and after, and the queued ledger event appear here.</p></div>'; }
+  else { const cn=cust(L.cid).name;
+    if(L.ok){ const row=(k,a,b)=>'<tr><td>'+k+'</td><td class="r mono">'+a+'</td><td class="r mono">'+b+'</td><td class="r mono" style="color:var(--ok)">'+'</td></tr>';
+      const dl=(a,b)=>{ const x=b-a; return x?(x>0?'+':'−')+money(Math.abs(x),true):'—'; };
+      r.innerHTML='<div class="res ok"><h3>✓ Tokenization successful</h3><p style="margin:0">'+money(L.amount,true)+' tokenized for <b>'+esc(cn)+'</b> at '+stamp(L.t)+'. Minted in block #'+L.block+' <span class="mono hint">'+L.hash+'</span>.</p>'+
+       '<table><thead><tr><th>Balance</th><th class="r">Before</th><th class="r">After</th><th class="r">Change</th></tr></thead><tbody>'+
+       [['Client bank balance (COBOL)',L.before.bank,L.after.bank],['Client tokens (blockchain)',L.before.tokens,L.after.tokens],['Omnibus reserve',L.before.reserve,L.after.reserve],['Tokens in circulation',L.before.supply,L.after.supply]].map(x=>'<tr><td>'+x[0]+'</td><td class="r mono">'+money(x[1],true)+'</td><td class="r mono">'+money(x[2],true)+'</td><td class="r mono">'+dl(x[1],x[2])+'</td></tr>').join('')+
+       '<tr><td>Backing ratio</td><td class="r mono">'+L.before.backing.toFixed(2)+'%</td><td class="r mono">'+L.after.backing.toFixed(2)+'%</td><td class="r mono">1:1 kept</td></tr></tbody></table>'+
+       '<p class="hint" style="margin-top:8px">'+(L.ev?'Ledger event <b class="mono">'+L.ev+'</b> queued: COBOL\'s token record updates at the '+esc(L.sched)+'.':'<b class="st-bad">Fault test:</b> the event was lost before reaching the queue; reconciliation will flag it.')+'</p></div>'; }
+    else r.innerHTML='<div class="res bad"><h3>✗ Tokenization '+(L.d.decision==='HOLD'?'held':L.d.decision==='BLOCK'?'blocked':'rejected')+'</h3><p style="margin:0"><b>'+money(L.amount,true)+'</b> for <b>'+esc(cn)+'</b> at '+stamp(L.t)+'.</p><p style="margin:6px 0 0"><b>Reason:</b> '+esc(L.d.signals[0].l)+'. '+esc(L.d.signals[0].d||'')+'</p><p style="margin:4px 0 0">'+esc(L.d.summary)+'</p>'+(L.d.rules.length?'<p class="rules"><b>Rule:</b> '+L.d.rules.map(esc).join(' · ')+'</p>':'')+(L.d.action?'<p class="rules"><b>Next step:</b> '+esc(L.d.action)+'</p>':'')+'<p class="hint" style="margin-top:8px">No money moved. Bank balance stays '+money(L.before.bank,true)+'; tokens stay '+money(L.before.tokens,true)+'.</p></div>'; }
+  const th=AUDIT.filter(a=>a.s===SESSION&&a.cat==='Tokenization').slice(0,12);
+  $('tkHist').innerHTML='<thead><tr><th>Sim time</th><th>Status</th><th>What happened</th><th class="r">Amount</th></tr></thead><tbody>'+(th.map(a=>'<tr><td class="mono" style="white-space:nowrap">'+stamp(a.t)+'</td><td><span class="tag '+stCls(a.status)+'">'+esc(a.status)+'</span></td><td>'+esc(a.desc)+'</td><td class="r mono">'+money(a.amt,true)+'</td></tr>').join('')||'<tr><td colspan="4"><div class="empty">None yet.</div></td></tr>')+'</tbody>'; }
+
+/* ---------- event queue tab ---------- */
+function renderQueueTab(){ if(!$('qBanner')) return; const on=isOnline(S.t), nb=nextBatchAt(S.t);
+  $('qBanner').innerHTML='<div class="banner '+(on?'on':'off')+'"><b>'+(on?'COBOL ledger online.':'COBOL ledger offline.')+'</b> '+(on?'Queued events post at the '+esc(nextBatch(S.t))+', in '+dur(nb-S.t)+' of sim time.':'Ledger updates are held for the next business window: the '+esc(nextBatch(S.t))+', in '+dur(nb-S.t)+'. Token payments still settle immediately.')+'</div>';
+  const d=dayOf(S.t), biz=dowOf(S.t)<5;
+  $('qSched').innerHTML=biz?[[9,'9 AM catch-up'],[12,'Batch 1 of 3'],[15,'Batch 2 of 3'],[18,'Batch 3 · end of day']].map(s=>{ const x=d*1440+s[0]*60, st=x<=S.t?'done':x===nb?'next':'';
+    return '<div class="slot '+st+'"><b>'+String(s[0]).padStart(2,'0')+':00</b>'+s[1]+'<br><span class="hint">'+(st==='done'?'✓ ran':st==='next'?'next · in '+dur(x-S.t):'later today')+'</span></div>'; }).join(''):'<div class="empty" style="grid-column:1/-1">Weekend: COBOL runs no batches. Next window: '+esc(nextBatch(S.t))+'.</div>';
+  $('qPending').innerHTML=S.queue.length?'<thead><tr><th>Event</th><th>Type</th><th>Ledger update</th><th class="r">Amount</th><th>Created</th><th>Scheduled</th><th>Status</th><th>Idempotency key</th></tr></thead><tbody>'+S.queue.map(e=>'<tr><td class="mono">'+esc(e.id)+(e.dup?' <span class="tag t-warn">retry</span>':'')+'</td><td>'+(e.kind==='POST'?'Book '+e.tx.type:e.kind==='CREDIT'?'Cash-out credit':'Fedwire')+'</td><td>'+esc(e.desc)+'</td><td class="r mono">'+money(evAmt(e),true)+'</td><td class="mono" style="white-space:nowrap">'+stamp(e.t)+'</td><td class="mono" style="white-space:nowrap">'+(nb!==null?stamp(nb):'—')+'</td><td>'+(on?'<span class="st-wait">⏳ Scheduled · next batch</span>':'<span class="st-wait">☾ Awaiting next business day</span>')+'</td><td class="mono" style="font-size:11px;color:var(--muted)">'+(e.kind==='POST'?e.tx.hash:esc(e.id))+'</td></tr>').join('')+'</tbody>':'<tbody><tr><td><div class="empty">Nothing waiting. COBOL is up to date with the blockchain.</div></td></tr></tbody>';
+  $('qDone').innerHTML=S.processed.length?'<thead><tr><th>Event</th><th>Ledger update</th><th class="r">Amount</th><th>Created</th><th>Processed</th><th>Waited</th><th>Batch</th><th>Result</th></tr></thead><tbody>'+S.processed.slice(0,40).map(p=>'<tr><td class="mono">'+esc(p.id)+'</td><td>'+esc(p.desc)+'</td><td class="r mono">'+(p.amt?money(p.amt,true):'—')+'</td><td class="mono" style="white-space:nowrap">'+stamp(p.created)+'</td><td class="mono" style="white-space:nowrap">'+stamp(p.posted)+'</td><td class="mono">'+dur(p.posted-p.created)+'</td><td>'+esc(p.label)+'</td><td><span class="tag '+stCls(p.result)+'">'+esc(p.result)+'</span></td></tr>').join('')+'</tbody>':'<tbody><tr><td><div class="empty">No batch has run yet. The first is at 12:00.</div></td></tr></tbody>';
+  $('navQ').textContent=S.queue.length; }
+function sendDuplicate(){ const src=S.processed.find(p=>p.result==='Posted'&&p.ev&&p.ev.kind==='POST'); const base=src?src.ev:S.queue.find(e=>e.kind==='POST');
+  if(!base){ toast('Nothing to duplicate yet','Make a token payment or tokenize first, so there is an event to resend.','warn','Event queue'); return; }
+  S.queue.push(Object.assign({},base,{t:S.t,dup:true}));
+  log('Queue','Duplicate of '+base.id+' arrived (simulated network retry).');
+  audit('System','Queued','Duplicate of '+base.id+' sent to the queue (simulated network retry). The idempotency check should ignore it at the next batch.',{ref:base.id,comp:'Event queue'});
+  toast('Duplicate event queued',base.id+' was sent again. At the next batch COBOL should recognise its idempotency key and skip it.','warn','Event queue'); renderAll(); }
+function renderLive(){ renderTiles(); renderMap(); renderQueueTab(); }
+
+
+/* ---------- toasts, log, narration, stages ---------- */
+function toast(title,body,kind,who){
+  const el=document.createElement('div'); el.className='toast '+(kind||'');
+  el.innerHTML='<div class="who">'+esc(who||'Apex')+' · '+stamp(S.t)+'</div><b>'+esc(title)+'</b>'+(body?'<div>'+esc(body)+'</div>':'');
+  const box=$('toasts'); box.prepend(el); while(box.children.length>4) box.lastChild.remove(); setTimeout(()=>el.remove(),4800);
+  NOTES.unshift({title,body,kind,who:who||'Apex',at:stamp(S.t)}); if(NOTES.length>40) NOTES.pop(); renderNotes();
+}
+function log(src,msg){ S.log.unshift({t:S.t,src,msg}); if(S.log.length>400) S.log.pop(); renderLog(); }
+function renderLog(){ $('log').innerHTML=S.log.map(e=>'<div><time>'+stamp(e.t)+'</time><span class="src"><span class="tag t-grey">'+esc(e.src)+'</span></span><p>'+esc(e.msg)+'</p></div>').join('')||'<p class="hint">Nothing yet.</p>'; }
+function narr(html){ $('narr').innerHTML=html; }
+const STAGES=[['client','Client'],['gateway','Gateway'],['control','Transaction control'],['agent','AI check'],['contract','Smart contract'],['chain','Blockchain'],['queue','Event queue'],['ledger','COBOL ledger'],['recon','Reconciliation']];
+function drawStages(){ $('stages').innerHTML=STAGES.map((s,i)=>(i?'<span class="arrow">›</span>':'')+'<span class="stage" id="sg-'+s[0]+'"><i></i>'+s[1]+'</span>').join(''); }
+const COLS={ledger:'colCobol',queue:'colQueue',chain:'colChain',contract:'colChain'};
+function hot(k,bad){
+  document.querySelectorAll('.stage.hot').forEach(e=>{e.classList.remove('hot','bad'); e.classList.add('done');});
+  document.querySelectorAll('.col.hot').forEach(e=>e.classList.remove('hot'));
+  document.querySelectorAll('.mnode.hot').forEach(e=>{e.classList.remove('hot','bad'); e.classList.add('done');});
+  if(!k){ document.querySelectorAll('.stage.done,.mnode.done').forEach(e=>e.classList.remove('done')); return; }
+  const m=$('mp-'+k); if(m){ m.classList.remove('done'); m.classList.add('hot'); if(bad) m.classList.add('bad'); }
+  const e=$('sg-'+k); if(e){ e.classList.remove('done'); e.classList.add('hot'); if(bad) e.classList.add('bad'); }
+  if(COLS[k]) $(COLS[k]).classList.add('hot');
+}
+const SRC={client:'Client',gateway:'Gateway',control:'Control',agent:'AI',contract:'Contract',chain:'Blockchain',queue:'Queue',ledger:'COBOL',recon:'Recon'};
+async function step(k,title,body,bad){ S.trace.push({k,title,body,t:S.t,bad:!!bad}); busyLabel=CNAME[k]+': '+title; updBusy(); hot(k,bad); narr('<b>'+esc(STAGES.find(s=>s[0]===k)[1])+':</b> '+esc(title)+(body?' <span style="color:var(--muted)">'+esc(body)+'</span>':'')); log(SRC[k],title+(body?' — '+body:'')); await sleep(pace); }
+
+/* ---------- coin animation ---------- */
+function fly(a,b,text,cls){
+  if(!a||!b||!a.offsetParent||!b.offsetParent||matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
+  const r1=a.getBoundingClientRect(), r2=b.getBoundingClientRect();
+  const c=document.createElement('div'); c.className='coin '+(cls||''); c.textContent=text; document.body.appendChild(c);
+  const x0=r1.left+r1.width/2, y0=r1.top+r1.height/2, dx=r2.left+r2.width/2-x0, dy=r2.top+r2.height/2-y0;
+  c.style.left=x0+'px'; c.style.top=y0+'px';
+  const end='translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px))';
+  const an=c.animate([{transform:'translate(-50%,-50%) scale(.5)',opacity:0},{transform:'translate(-50%,-50%) scale(1)',opacity:1,offset:.15},{transform:end+' scale(1)',opacity:1,offset:.85},{transform:end+' scale(.6)',opacity:0}],{duration:Math.max(650,pace*1.05),easing:'cubic-bezier(.45,0,.2,1)'});
+  return an.finished.then(()=>c.remove(),()=>c.remove());
+}
+const W=(cid,part)=>$('w'+part+'-'+cid);
+
+/* ---------- AI risk agent ---------- */
+function R(decision,score,signals,summary,rules,action,sar){ return {decision,score:Math.min(100,score),signals,summary,rules:rules||[],action:action||'',sar:!!sar}; }
+function evaluate(tx,ctx){
+  const get=ctx.get, from=get(tx.from), to=tx.to?get(tx.to):null, by=tx.by||'treasurer';
+  const off=!isOnline(ctx.now);
+  if(by==='unknown') return R('BLOCK',100,[{l:'Unrecognised user or device',p:'rule',d:'This request did not come from an authorised person on '+from.name+'\'s mandate.'}],'Blocked: this looks like an account takeover. Nothing moves until the client confirms on a known phone number.',['Strong authentication for corporate payments (FFIEC guidance)','Dual control policy'],'Freeze the session, call the client, reset credentials.');
+  if(tx.kind==='tokenize'){
+    if(!ctx.online) return R('REJECT',0,[{l:'COBOL ledger is closed',p:'rule',d:'Tokens can only be created when COBOL can lock the dollars behind them.'}],'Rejected: no token without real money locked behind it.',['1:1 backing rule'],'Try again from '+nextOpen(ctx.now)+'.');
+    if(tx.amount>from.ledger-(from.memoHold||0)) return R('REJECT',0,[{l:'Not enough bank balance',p:'rule',d:'Asked for '+money(tx.amount)+'; available '+money(from.ledger-(from.memoHold||0))+'.'}],'Rejected: creating more tokens than the deposit would break 1:1 backing.',['1:1 backing rule']);
+    if(from.kyc!=='Current') return R('HOLD',0,[{l:'KYC review overdue',p:'rule',d:from.name+' must refresh its customer checks first.'}],'Held until KYC is refreshed.',['FinCEN Customer Due Diligence rule'],'Send to KYC operations.');
+    return R('APPROVE',0,[{l:'Customer checks current',p:0,d:'Account in good standing; bank balance confirmed.'}],'Approved: lock the dollars and create tokens 1:1.',['1:1 backing rule','KYC current']);
+  }
+  if(tx.kind==='redeem'){
+    if(tx.amount>from.tokens) return R('REJECT',0,[{l:'Not enough tokens',p:'rule',d:'Wallet holds '+money(from.tokens)+'.'}],'Rejected: you can\'t turn back more tokens than you hold.',['Smart-contract balance rule']);
+    return R('APPROVE',0,[{l:'Owner cashing out own tokens',p:0,d:'No counterparty involved.'}],'Approved: burn the tokens and credit the bank balance.',['Redemption terms']);
+  }
+  if(tx.kind==='transfer'&&tx.amount>from.tokens) return R('REJECT',0,[{l:'Not enough tokens',p:'rule',d:'Wallet holds '+money(from.tokens)+'; payment is '+money(tx.amount)+'.'}],'Rejected before scoring: the smart contract would refuse it anyway.',['Smart-contract balance rule'],'Tokenize more during bank hours.');
+  if(tx.kind==='wire'&&tx.amount>from.ledger-(from.memoHold||0)) return R('REJECT',0,[{l:'Not enough bank balance',p:'rule',d:''}],'Rejected: not enough money in the bank account.',[]);
+  if(by==='analyst'&&tx.amount>ANALYST_LIMIT) return R('HOLD',0,[{l:'Above the person\'s approval limit',p:'rule',d:'Junior analysts can send up to '+money(ANALYST_LIMIT)+'; this is '+money(tx.amount)+'.'}],'Held: a second, senior approver must sign off (maker-checker).',['Dual control / maker-checker policy'],'A senior approver at the client confirms, then an analyst releases it.');
+  if(to.sanctioned) return R('BLOCK',100,[{l:'Sanctions match',p:'rule',d:to.name+' '+to.note+'.'}],'Blocked: funds frozen and the sanctions team alerted.',['OFAC sanctions screening','Blocked funds reported to OFAC within 10 business days'],'Escalate to the sanctions officer. Never released automatically.',true);
+  if(from.kyc!=='Current'||(to.kyc&&to.kyc!=='Current')) return R('HOLD',0,[{l:'KYC review overdue',p:'rule',d:(from.kyc!=='Current'?from.name:to.name)+' has an overdue customer check.'}],'Held: customer checks are out of date.',['FinCEN Customer Due Diligence rule'],'Analyst confirms identity and owners, then releases or rejects.');
+  if(to.highRisk) return R('HOLD',35,[{l:'High-risk country',p:'rule',d:to.name+' is in '+to.country+', a '+to.note+'.'}],'Held for enhanced due diligence.',['FATF high-risk list · enhanced due diligence','Travel Rule data attached'],'Analyst checks the purpose of the payment and source of funds.');
+  const sig=[]; let score=0; const add=(l,p,d)=>{sig.push({l,p,d}); score+=p;};
+  const r=tx.amount/from.typical;
+  if(r>10) add('Much bigger than usual',55,money(tx.amount)+' is '+r.toFixed(1)+'× this client\'s normal payment ('+money(from.typical)+').');
+  else if(r>3) add('Bigger than usual',30,r.toFixed(1)+'× this client\'s normal payment.');
+  const hist=ctx.hist;
+  const known=from.cps.includes(tx.to)||hist.some(x=>x.from===tx.from&&x.to===tx.to&&x.t<=ctx.now);
+  if(!known) add('New recipient',15,from.name+' has never paid '+to.name+' before.');
+  const recent=hist.filter(x=>x.from===tx.from&&ctx.now-x.t<=360&&x.t<=ctx.now);
+  if(recent.length>=4) add('Too many payments, too fast',40,(recent.length+1)+' payments out within 6 hours.');
+  else if(recent.length>=2) add('Payments speeding up',25,(recent.length+1)+' payments out within 6 hours.');
+  const band=a=>a>=9e5&&a<1e6;
+  if(band(tx.amount)){ const n=hist.filter(x=>x.from===tx.from&&band(x.amount)&&ctx.now-x.t<=1440&&x.t<=ctx.now).length;
+    if(n>=2) add('Kept just under $1M',50,(n+1)+' payments just below the $1M review line in 24 hours. Possible structuring.');
+    else if(n===1) add('Kept just under $1M',45,'Second payment just below the $1M review line in 24 hours.'); }
+  const back=hist.find(x=>x.from===tx.to&&x.to===tx.from&&ctx.now-x.t<=360&&x.t<=ctx.now);
+  if(back){ add('Money sent straight back',40,to.name+' paid '+from.name+' '+money(back.amount)+' '+(ctx.now-back.t<60?'minutes':Math.round((ctx.now-back.t)/60)+'h')+' ago.');
+    if(Math.abs(back.amount-tx.amount)/tx.amount<=.05) add('Same amount bounced back',25,'Round-tripping: the money goes back where it came from with no business reason.'); }
+  if(to.newAccount) add('Brand-new account receiving',20,to.flags.join(' · ')+'.');
+  if(from.newAccount) add('Brand-new account sending',20,from.flags.join(' · ')+'.');
+  if(off) sig.push({l:'Outside bank hours',p:0,d:'Not suspicious on its own. Paying any time is the point.'});
+  if(tx.kind==='wire') sig.push({l:'Travel Rule details attached',p:0,d:'Sender and receiver details included ($3,000+).'});
+  score=Math.min(100,score);
+  const rules=['BSA/AML transaction monitoring','OFAC screening: clear','Authorised initiator: '+BY[by]];
+  if(score>=65) return R('HOLD',score,sig,'Held for a person to review: the warning signs add up.',rules.concat(['SAR draft ready; the analyst decides (30-day clock)']),'Analyst reviews, then releases or rejects and files a SAR.',true);
+  if(score>=35) return R('MONITOR',score,sig,'Allowed, but logged as an alert to watch.',rules,'Added to the weekly alert review.');
+  return R('APPROVE',score,sig,'Approved: normal behaviour for this client.',rules,'Settle now.');
+}
+const liveCtx=()=>({get:ent,now:S.t,hist:S.history,online:isOnline(S.t)});
+function showDecision(d,tx,label){
+  const f=ent(tx.from), to=tx.to?ent(tx.to):null;
+  const what=label||((tx.kind==='tokenize'?'Tokenize ':tx.kind==='redeem'?'Redeem ':tx.kind==='wire'?'Wire ':'Pay ')+money(tx.amount)+' · '+f.name+(to?' → '+to.name:''));
+  $('decision').innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill p-'+d.decision+'">'+d.decision+'</span><span class="mono" style="font-size:12px;color:var(--muted)">risk score '+d.score+'/100</span></div>'+
+   '<p style="margin:9px 0 0;font-weight:700">'+esc(what)+'</p><p style="margin:2px 0 0;font-size:12px;color:var(--muted)">Initiated by: '+esc(BY[tx.by||'treasurer'])+'</p>'+
+   '<div class="scorebar"><i style="left:'+d.score+'%"></i></div><div class="scale"><span>0 approve</span><span>35 watch</span><span>65 hold</span><span>100</span></div>'+
+   '<p style="margin:10px 0 0">'+esc(d.summary)+'</p><ul class="sig">'+d.signals.map(s=>'<li><b>'+(s.p==='rule'?'rule':(s.p>0?'+'+s.p:'0'))+'</b><span>'+esc(s.l)+'<small>'+esc(s.d||'')+'</small></span></li>').join('')+'</ul>'+
+   (d.rules.length?'<p class="rules"><b>Rules applied:</b> '+d.rules.map(esc).join(' · ')+'</p>':'')+(d.action?'<p class="rules"><b>Next step:</b> '+esc(d.action)+'</p>':'');
+}
+function emptyDecision(){ $('decision').innerHTML='<span class="pill p-WAIT">Waiting</span><p style="margin:9px 0 0;font-size:13px">No payment checked yet. Send one and the AI\'s decision, score and reasons appear here.</p><div class="scorebar"><i style="left:0"></i></div><div class="scale"><span>0 approve</span><span>35 watch</span><span>65 hold</span><span>100</span></div>'; }
+function addAlert(d,tx){ if(d.decision==='APPROVE') return; const f=ent(tx.from), to=tx.to?ent(tx.to):null;
+  S.alerts.unshift({t:S.t,d,txt:(tx.kind==='wire'?'Wire ':tx.kind==='transfer'?'Payment ':tx.kind+' ')+money(tx.amount)+' · '+f.name+(to?' → '+to.name:''),why:d.signals.filter(s=>s.p==='rule'||s.p>0).map(s=>s.l).join(' · ')}); }
+
+/* ---------- money mechanics ---------- */
+const supply=()=>S.customers.reduce((a,c)=>a+c.tokens,0);
+function entry(text,amt){ S.entries.unshift({t:S.t,text,amt}); if(S.entries.length>40) S.entries.pop(); }
+function chainTx(type,deltas,desc){
+  const tx={hash:hash(),n:S.chain.length+1,type,deltas,desc,t:S.t,posted:false}; S.chain.unshift(tx);
+  if(S.dropNext){ S.dropNext=false; $('chkDrop').checked=false; tx.lost=true; log('Queue','Fault test: the event for block #'+tx.n+' was lost on its way to the queue.');
+    toast('Event lost (fault test)','Block #'+tx.n+' is on the blockchain, but COBOL will never hear about it. Reconciliation should catch this at the next batch.','bad','Event queue');
+    audit('System','Failed','Fault test: the event for block #'+tx.n+' ('+desc+') was lost before reaching the queue.',{ref:tx.hash,comp:'Event queue',cids:Object.keys(deltas)}); }
+  else S.queue.push({id:'EV-'+(1000+S.chain.length),kind:'POST',tx,t:S.t,desc});
+  return tx;
+}
+function runBatch(label){
+  const items=S.queue.splice(0), done=[]; let dups=0, posted=0;
+  items.forEach(ev=>{
+    const key=ev.kind==='POST'?'POST:'+ev.tx.hash:ev.kind+':'+ev.id;
+    if(S.doneKeys.has(key)){ dups++; S.processed.unshift({id:ev.id,desc:ev.desc,amt:evAmt(ev),created:ev.t,posted:S.t,result:'Duplicate ignored',label,ev});
+      done.push('Duplicate ignored: '+ev.id+' was already booked'); audit('Batch','Duplicate ignored',ev.id+' · '+ev.desc+' arrived twice. Its idempotency key ('+(ev.kind==='POST'?ev.tx.hash:ev.id)+') was already booked, so COBOL skipped it.',{ref:ev.id,amt:evAmt(ev),comp:'Event queue'}); return; }
+    S.doneKeys.add(key); posted++; S.processed.unshift({id:ev.id,desc:ev.desc,amt:evAmt(ev),created:ev.t,posted:S.t,result:'Posted',label,ev});
+    if(ev.kind==='POST'){ Object.entries(ev.tx.deltas).forEach(([id,dv])=>{cust(id).shadow+=dv;}); ev.tx.posted=true; done.push('Booked: '+ev.desc); }
+    else if(ev.kind==='CREDIT'){ const c=cust(ev.cid); c.ledger+=ev.amount; S.reserve-=ev.amount; S.pendingRedeem-=ev.amount; entry('Reserve → '+c.name+' bank balance (cash-out)',ev.amount); done.push('Credited '+money(ev.amount)+' to '+c.name); }
+    else if(ev.kind==='WIRE'){ const c=cust(ev.cid); c.ledger-=ev.amount; c.memoHold-=ev.amount; S.ext[ev.to]=(S.ext[ev.to]||0)+ev.amount; entry(c.name+' → Fedwire to '+ent(ev.to).name,ev.amount); done.push('Wire sent: '+money(ev.amount)+' to '+ent(ev.to).name+' (waited '+Math.round((S.t-ev.t)/60)+'h)'); }
+  });
+  if(S.processed.length>120) S.processed.length=120;
+  if(items.length) S.cobLast=S.t;
+  const ok=reconcile();
+  S.lastBatch={label,t:S.t,items:done,ok};
+  audit('Batch',posted?'Posted':'Success',label+': '+posted+' event(s) booked in COBOL'+(dups?', '+dups+' duplicate(s) ignored':'')+'.',{comp:'COBOL ledger'});
+  audit('Reconciliation',ok?'Matched':'Break',ok?'Blockchain, COBOL (plus queue) and reserve agree. Backing '+backing().toFixed(2)+'%.':S.recon.exceptions.length+' break(s): '+S.recon.exceptions.map(e=>cust(e.cid).name).join(', ')+'. The blockchain shows moves COBOL never received.',{comp:'Reconciliation engine',cids:S.recon.exceptions.map(e=>e.cid)});
+  log('COBOL',label+': booked '+items.length+' event(s). Reconciliation '+(ok?'matched.':'found '+S.recon.exceptions.length+' break(s).'));
+  toast(label,(items.length?'COBOL booked '+posted+' waiting event'+(posted!==1?'s':'')+'. '+(dups?dups+' duplicate'+(dups>1?'s':'')+' ignored. ':''):'Nothing waiting. ')+(ok?'Everything matches.':'Reconciliation found a break.'),ok?'ok':'bad','COBOL ledger');
+  if(items.length) fly($('qFeed'),$('cobFeed'),items.length+' event'+(items.length>1?'s':'')+' → COBOL','ev');
+  renderAll();
+}
+function reconcile(){
+  const exc=[];
+  S.customers.forEach(c=>{ const pend=S.queue.filter(e=>e.kind==='POST').reduce((a,e)=>a+(e.tx.deltas[c.id]||0),0); const diff=c.tokens-(c.shadow+pend); if(Math.abs(diff)>.5) exc.push({cid:c.id,diff}); });
+  S.recon={at:S.t,exceptions:exc}; return !exc.length;
+}
+function replay(){
+  const lost=S.chain.filter(x=>x.lost&&!x.posted);
+  lost.forEach(x=>{ Object.entries(x.deltas).forEach(([id,dv])=>{cust(id).shadow+=dv;}); x.posted=true; x.lost=false; S.doneKeys.add('POST:'+x.hash); entry('Replayed block #'+x.n+' from the blockchain log',0);
+    S.processed.unshift({id:'EV-'+(1000+x.n),desc:x.desc,amt:Object.values(x.deltas).reduce((a,v)=>a+Math.max(0,v),0)||Math.abs(Object.values(x.deltas)[0]),created:x.t,posted:S.t,result:'Replayed',label:'Replay from chain log'}); });
+  const ok=reconcile(); if(S.lastBatch){ S.lastBatch.items.push('Replayed '+lost.length+' missing event(s) from the blockchain log'); S.lastBatch.ok=ok; } log('Recon','Replayed '+lost.length+' missing event(s) from the blockchain log. '+(ok?'All matched.':'Still mismatched.'));
+  audit('Reconciliation',ok?'Replayed':'Break','Replayed '+lost.length+' missing event(s) from the blockchain log and booked each once. '+(ok?'All records match.':'Still mismatched.'),{comp:'Reconciliation engine',cids:lost.flatMap(x=>Object.keys(x.deltas))});
+  toast('Break fixed','The missing event was rebuilt from the blockchain log and booked once. Everything matches again.','ok','Reconciliation'); renderAll();
+}
+
+/* ---------- operations ---------- */
+let chainOp=Promise.resolve();
+const enqueueOp=fn=>(chainOp=chainOp.then(async()=>{ busy++; S.trace=[]; updBusy(); try{ await fn(); } finally{ busy--; busyLabel=''; updBusy(); renderAll(); } }).catch(e=>console.error(e)));
+function focus(cid){ if($('selFrom').value!==cid){ $('selFrom').value=cid; renderForm(); } renderWallets(); }
+function verdictToast(d,tx){ if(d.decision==='APPROVE') return; const k={MONITOR:'warn',HOLD:'bad',BLOCK:'bad',REJECT:'bad'}[d.decision];
+  toast('AI: '+d.decision+(d.score?' · score '+d.score:''),d.summary,k,'AI security check'); }
+
+async function doTokenize(cid,amount,by){
+  const c=cust(cid), tx={kind:'tokenize',from:cid,amount,by}; focus(cid); const before=snap(cid);
+  await step('client','Tokenize '+money(amount),c.name+' wants to turn part of its bank balance into tokens.');
+  await step('gateway','Request checked','Signed in, form valid, sent to transaction control.');
+  const d=screen(tx); showDecision(d,tx);
+  if(d.decision!=='APPROVE'){ await step(d.decision==='BLOCK'?'agent':'ledger',d.decision+': '+d.signals[0].l,d.summary,true); addAlert(d,tx); if(d.decision==='HOLD') addHold(tx,d);
+    S.lastTok={t:S.t,cid,amount,ok:false,d,before};
+    audit('Tokenization',d.decision==='HOLD'?'Held':d.decision==='BLOCK'?'Blocked':'Rejected','Tokenize '+money(amount,true)+' for '+c.name+': '+d.signals[0].l+'. '+d.summary+' No money moved.',{amt:amount,comp:d.decision==='BLOCK'?'AI compliance agent':'Tokenization service',cids:[cid]});
+    toast('Tokenization '+(d.decision==='HOLD'?'held':d.decision==='BLOCK'?'blocked':'failed'),d.signals[0].l+'. '+d.summary+(d.action?' '+d.action:''),'bad','Tokenization service'); hot(null); renderAll(); return; }
+  await step('control','Locking the money','Transaction control asks COBOL to lock '+money(amount)+' so it can\'t be spent twice.');
+  c.ledger-=amount; S.reserve+=amount; entry(c.name+' bank balance → omnibus reserve',amount); renderAll();
+  await fly(W(cid,'b'),$('cobReserve'),money(amount),'cobol');
+  await step('ledger','Dollars moved into the reserve',money(amount)+' left '+c.name+'\'s bank balance and now sits in Apex\'s omnibus reserve.');
+  await step('agent','Customer checks passed','KYC current, account in good standing.');
+  await step('contract','Mint rule passed','Tokens created ≤ dollars locked. Only Apex\'s tokenization service can mint.');
+  c.tokens+=amount; c.flags=c.flags.filter(f=>f!=='No tokens yet'); const ct=chainTx('MINT',{[cid]:amount},'Mint '+money(amount)+' → '+c.name); renderAll();
+  await fly($('chainSupply'),W(cid,'t'),'+'+money(amount)+' tokens');
+  await step('chain','Tokens created',c.name+' now holds '+money(c.tokens)+' in tokens.');
+  await fly($('chainFeed'),$('qFeed'),'event','ev');
+  await step('queue','Booking queued','COBOL\'s token record will be updated at the '+nextBatch(S.t)+'.');
+  await step('recon','Backing check: 100%','Reserve '+money(S.reserve)+' covers every token in circulation.');
+  { const after=snap(cid), ev=ct.lost?null:S.queue.find(e=>e.tx===ct);
+    S.lastTok={t:S.t,cid,amount,ok:true,d,before,after,ev:ev?ev.id:null,sched:nextBatch(S.t),hash:ct.hash,block:ct.n};
+    audit('Tokenization','Success','Tokenized '+money(amount,true)+' for '+c.name+'. Bank '+money(before.bank,true)+' → '+money(after.bank,true)+'; tokens '+money(before.tokens,true)+' → '+money(after.tokens,true)+'; reserve +'+money(amount,true)+'. '+(ev?'Event '+ev.id+' queued for the '+nextBatch(S.t)+'.':'Event lost (fault test).'),{amt:amount,ref:ct.hash,comp:'Tokenization service',cids:[cid]});
+    toast('Tokenization successful',money(amount,true)+' minted 1:1 for '+c.name+'. Backing '+after.backing.toFixed(2)+'%. Ledger event '+(ev?ev.id+' queued.':'lost (fault test).'),'ok','Tokenization service'); }
+  hot(null); narr('<b>Done.</b> '+esc(c.name)+' turned '+money(amount)+' into tokens. Its bank balance went down, its tokens went up, and the reserve grew by the same amount.'); renderAll();
+}
+async function doTransfer(from,to,amount,by,opts){
+  opts=opts||{}; const a=cust(from), b=cust(to), tx={kind:'transfer',from,to,amount,by}; focus(from);
+  if(!opts.released){
+    await step('client','Pay '+money(amount),a.name+' → '+b.name+(isOnline(S.t)?'':' (bank is closed)')+'.');
+    await step('gateway','Request checked','Initiated by: '+BY[by]+'.');
+    await step('control','Token balance checked',a.name+' holds '+money(a.tokens)+' in tokens. No COBOL needed: tokens are already backed.');
+    const d=screen(tx); S.history.push({from,to,amount,t:S.t}); showDecision(d,tx); addAlert(d,tx);
+    await step('agent',d.decision+' · score '+d.score,d.summary,d.decision!=='APPROVE'&&d.decision!=='MONITOR');
+    verdictToast(d,tx);
+    if(d.decision==='REJECT'||d.decision==='BLOCK'){ audit('Payment',d.decision==='BLOCK'?'Blocked':'Rejected','Pay '+money(amount,true)+' '+a.name+' → '+b.name+': '+d.signals[0].l+'. No money moved.',{amt:amount,comp:'AI compliance agent',cids:[from,to]}); hot(null); narr('<b>'+d.decision+'.</b> '+esc(d.summary)+' No money moved.'); renderAll(); return; }
+    if(d.decision==='HOLD'){ addHold(tx,d); audit('Payment','Held','Pay '+money(amount,true)+' '+a.name+' → '+b.name+' held for analyst review (score '+d.score+'): '+d.signals.filter(s=>s.p==='rule'||s.p>0).map(s=>s.l).join(', ')+'.',{amt:amount,comp:'AI compliance agent',cids:[from,to]}); hot(null); narr('<b>Held.</b> The payment waits in Analyst review. The AI can\'t release it; only a person can.'); renderAll(); return; }
+  } else if(amount>a.tokens){ toast('Release failed',a.name+' no longer has enough tokens.','bad','Analyst'); audit('Payment','Failed','Released payment '+money(amount,true)+' '+a.name+' → '+b.name+' failed: not enough tokens any more.',{amt:amount,comp:'Tokenization service',cids:[from,to]}); return; }
+  await step('contract','Transfer rules passed','Both wallets are Apex clients, balance is enough, limits OK.');
+  a.tokens-=amount; b.tokens+=amount; const ct=chainTx('PAY',{[from]:-amount,[to]:amount},money(amount)+' '+a.name+' → '+b.name); renderAll();
+  await fly(W(from,'t'),W(to,'t'),money(amount));
+  await step('chain','Settled in about 2 seconds',b.name+' can use the '+money(amount)+' right now (block #'+ct.n+').');
+  if(!ct.lost){ await fly($('chainFeed'),$('qFeed'),'event','ev');
+    await step('queue',isOnline(S.t)?'Booking queued for the next batch':'COBOL is closed, so the event waits',isOnline(S.t)?'COBOL books it at the '+nextBatch(S.t)+'.':'It will be booked at the '+nextBatch(S.t)+'. The money has already moved.'); }
+  { const ev=ct.lost?null:S.queue.find(e=>e.tx===ct), on=isOnline(S.t);
+    audit('Payment','Settled',money(amount,true)+' '+a.name+' → '+b.name+' settled on chain in ~2 s (block #'+ct.n+')'+(opts.released?', released by analyst':'')+'. '+(ev?'Event '+ev.id+(on?' queued for the ':' waiting for the next business window: the ')+nextBatch(S.t)+'.':'Event lost (fault test).'),{amt:amount,ref:ct.hash,comp:'Permissioned blockchain',cids:[from,to]});
+    toast('Payment settled',money(amount,true)+' '+a.name+' → '+b.name+' in ~2 s.'+(on?'':' COBOL is closed: the ledger update waits for the '+nextBatch(S.t)+'.'),'ok','Token rail'); }
+  hot(null); narr('<b>Paid.</b> '+esc(a.name)+' paid '+esc(b.name)+' '+money(amount)+' at '+hhmm(S.t)+' on '+DAYS[dowOf(S.t)]+'. Watch both wallets: tokens moved, and "waiting to book" shows COBOL hasn\'t caught up yet.'); renderAll();
+}
+async function doRedeem(cid,amount,by){
+  const c=cust(cid), tx={kind:'redeem',from:cid,amount,by}; focus(cid);
+  await step('client','Cash out '+money(amount),c.name+' turns tokens back into a normal bank balance.');
+  await step('gateway','Request checked','Initiated by: '+BY[by]+'.');
+  const d=screen(tx); showDecision(d,tx); addAlert(d,tx);
+  if(d.decision!=='APPROVE'){ await step('agent',d.decision,d.summary,true); verdictToast(d,tx); audit('Redemption',d.decision==='BLOCK'?'Blocked':'Rejected','Redeem '+money(amount,true)+' for '+c.name+': '+d.signals[0].l+'.',{amt:amount,comp:'AI compliance agent',cids:[cid]}); hot(null); renderAll(); return; }
+  await step('contract','Burn rule passed','The owner is cashing out its own tokens.');
+  c.tokens-=amount; chainTx('BURN',{[cid]:-amount},'Burn '+money(amount)+' from '+c.name); renderAll();
+  await fly(W(cid,'t'),$('chainSupply'),'−'+money(amount)+' tokens');
+  await step('chain','Tokens destroyed','Tokens in circulation fell by '+money(amount)+'.');
+  if(isOnline(S.t)){ c.ledger+=amount; S.reserve-=amount; entry('Omnibus reserve → '+c.name+' bank balance (cash-out)',amount); renderAll();
+    await fly($('cobReserve'),W(cid,'b'),money(amount),'cobol');
+    await step('ledger','Credited now','COBOL is open, so the money is back in the bank balance immediately.');
+    audit('Redemption','Success','Redeemed '+money(amount,true)+' for '+c.name+': tokens burned and bank balance credited now (COBOL online).',{amt:amount,comp:'COBOL ledger',cids:[cid]}); toast('Redemption complete',money(amount,true)+' back in '+c.name+'\'s bank balance.','ok','COBOL ledger');
+  } else { S.pendingRedeem+=amount; S.queue.push({id:'CR-'+S.seq,kind:'CREDIT',cid,amount,t:S.t,desc:'Credit '+money(amount)+' to '+c.name}); renderAll();
+    await fly($('chainFeed'),$('qFeed'),'credit','ev');
+    await step('queue','COBOL is closed: credit waits','The reserve still holds the money. It lands in the bank balance at the '+nextBatch(S.t)+'.');
+    audit('Redemption','Queued','Redeemed '+money(amount,true)+' for '+c.name+': tokens burned now; credit queued for the '+nextBatch(S.t)+' (COBOL offline).',{amt:amount,comp:'Event queue',cids:[cid]}); toast('Redemption queued','Tokens burned. The '+money(amount,true)+' credit lands at the '+nextBatch(S.t)+'.','warn','Event queue'); }
+  hot(null); renderAll();
+}
+async function doWire(cid,to,amount,by,opts){
+  opts=opts||{}; const c=cust(cid), p=ent(to), tx={kind:'wire',from:cid,to,amount,by}; focus(cid);
+  if(!opts.released){
+    await step('client','Wire out '+money(amount),c.name+' → '+p.name+' at '+p.bank+' ('+p.country+'). This uses the old rails, not tokens.');
+    await step('gateway','Request checked','Sender and receiver details attached (Travel Rule).');
+    const d=screen(tx); S.history.push({from:cid,to,amount,t:S.t}); showDecision(d,tx); addAlert(d,tx);
+    await step('agent',d.decision+' · score '+d.score,d.summary,d.decision!=='APPROVE'&&d.decision!=='MONITOR');
+    verdictToast(d,tx);
+    const wl='Wire '+money(amount,true)+' '+c.name+' → '+p.name;
+    if(d.decision==='BLOCK'){ await step('control','Funds frozen','Payment stopped; sanctions officer alerted.',true); audit('Wire','Blocked',wl+': '+d.signals[0].l+'. Funds frozen.',{amt:amount,comp:'AI compliance agent',cids:[cid]}); hot(null); renderAll(); return; }
+    if(d.decision==='REJECT'){ audit('Wire','Rejected',wl+': '+d.signals[0].l+'.',{amt:amount,comp:'Transaction control',cids:[cid]}); hot(null); renderAll(); return; }
+    if(d.decision==='HOLD'){ addHold(tx,d); audit('Wire','Held',wl+' held for analyst review: '+d.signals.filter(s=>s.p==='rule'||s.p>0).map(s=>s.l).join(', ')+'.',{amt:amount,comp:'AI compliance agent',cids:[cid]}); hot(null); renderAll(); return; }
+  }
+  if(isOnline(S.t)){ c.ledger-=amount; S.ext[to]=(S.ext[to]||0)+amount; entry(c.name+' → Fedwire to '+p.name,amount); renderAll();
+    await fly(W(cid,'b'),$('extFeed'),money(amount),'cobol');
+    await step('ledger','Sent through Fedwire','The window is open, so it goes out today.');
+    audit('Wire','Success','Wire '+money(amount,true)+' '+c.name+' → '+p.name+' sent through Fedwire (window open).',{amt:amount,comp:'COBOL ledger',cids:[cid]}); toast('Wire sent',money(amount,true)+' to '+p.name+' via Fedwire.','ok','COBOL ledger');
+  } else { c.memoHold+=amount; S.queue.push({id:'WR-'+S.seq,kind:'WIRE',cid,to,amount,t:S.t,desc:'Wire '+money(amount)+' to '+p.name}); renderAll();
+    await fly(W(cid,'b'),$('qFeed'),money(amount),'cobol');
+    await step('queue','Fedwire is closed: wire waits','The money is set aside and goes out at the '+nextBatch(S.t)+'. This wait is why clients keep idle cash today.');
+    audit('Wire','Queued','Wire '+money(amount,true)+' '+c.name+' → '+p.name+' queued: Fedwire closed, goes out at the '+nextBatch(S.t)+'. Money set aside.',{amt:amount,comp:'Event queue',cids:[cid]}); toast('Wire queued','Fedwire is closed. '+money(amount,true)+' is set aside and goes out at the '+nextBatch(S.t)+'.','warn','Event queue'); }
+  hot(null); renderAll();
+}
+function addHold(tx,d){ S.holds.push({id:'H'+(S.holds.length+1)+'-'+Math.floor(S.t),tx,d,t:S.t}); log('AI','Held for a person: '+d.signals.filter(s=>s.p==='rule'||s.p>0).map(s=>s.l).join(', ')+'.'); }
+function release(id){ const i=S.holds.findIndex(h=>h.id===id); if(i<0) return; const h=S.holds.splice(i,1)[0];
+  log('Analyst','Released hold '+id+' after review.'); audit('Compliance','Released','Analyst released hold '+id+' ('+money(h.tx.amount,true)+' '+ent(h.tx.from).name+(h.tx.to?' → '+ent(h.tx.to).name:'')+'). Payment continues.',{amt:h.tx.amount,comp:'Analyst console',cids:[h.tx.from,h.tx.to].filter(Boolean)}); toast('Released by analyst','A person approved it, so the payment continues.','warn','Analyst'); renderAll();
+  const t=h.tx; enqueueOp(()=>t.kind==='transfer'?doTransfer(t.from,t.to,t.amount,t.by,{released:true}):t.kind==='wire'?doWire(t.from,t.to,t.amount,t.by,{released:true}):doTokenize(t.from,t.amount,t.by)); }
+function rejectHold(id){ const i=S.holds.findIndex(h=>h.id===id); if(i<0) return; const h=S.holds.splice(i,1)[0];
+  log('Analyst','Rejected hold '+id+(h.d.sar?' and opened a SAR case.':'.')); audit('Compliance','Rejected','Analyst rejected hold '+id+' ('+money(h.tx.amount,true)+' '+ent(h.tx.from).name+(h.tx.to?' → '+ent(h.tx.to).name:'')+')'+(h.d.sar?' and opened a SAR case from the AI evidence.':'.'),{amt:h.tx.amount,comp:'Analyst console',cids:[h.tx.from,h.tx.to].filter(Boolean)}); toast('Rejected by analyst',h.d.sar?'A SAR case was opened from the AI\'s evidence.':'Client notified.','bad','Analyst'); renderAll(); }
+
+/* ---------- clock ---------- */
+function onHour(h){ const hh=h%24, x=h*60, biz=dowOf(x)<5;
+  if(biz&&hh===9){ log('COBOL','COBOL is back online. Booking everything from overnight.'); runBatch('9 AM catch-up'); }
+  else if(biz&&hh===12) runBatch('Batch 1 of 3 · 12:00');
+  else if(biz&&hh===15) runBatch('Batch 2 of 3 · 15:00');
+  else if(biz&&hh===18){ runBatch('Batch 3 of 3 · 18:00'); log('COBOL','COBOL and Fedwire closed until '+nextOpen(x)+'.'); toast('Bank closed for the night','COBOL and Fedwire are offline until '+nextOpen(x)+'. Token payments still work.','warn','COBOL ledger'); }
+  if(dowOf(x)===5&&hh===0) toast('Weekend','COBOL and Fedwire stay closed until Monday 9 AM. Token payments keep working.','warn','Apex');
+}
+function advanceTo(target){ const ph=Math.floor(S.t/60), th=Math.floor(target/60); for(let h=ph+1;h<=th;h++){ S.t=h*60; onHour(h);} S.t=target; }
+function jump(hh,mm){ let x=dayOf(S.t)*1440+hh*60+mm; if(x<=S.t) x+=1440; while(dowOf(x)>4) x+=1440; advanceTo(x); renderAll(); }
+let last=performance.now(), lastDay=-1, lastOn=null, lastMin=-1;
+function frame(now){ const dt=Math.min(now-last,250); last=now; if(S.running) advanceTo(S.t+dt/1000*MIN_PER_SEC*S.speed); renderClock(); requestAnimationFrame(frame); }
+function renderClock(){
+  $('clockTime').textContent=hhmm(S.t); $('clockDay').textContent=dayLabel(S.t); $('mTime').textContent=hhmm(S.t); $('mDay').textContent=DAYS[dowOf(S.t)];
+  const on=isOnline(S.t);
+  if(on!==lastOn){ lastOn=on;
+    $('stLedger').className='st '+(on?'on':'off'); $('stLedgerTxt').textContent=on?'online':'offline';
+    $('stWire').className='st '+(on?'on':'off'); $('stWireTxt').textContent=on?'open':'closed';
+    $('mini').classList.toggle('off',!on); $('mState').textContent=on?'COBOL online':'COBOL offline · token rail live';
+    $('cobBadge').className='badge '+(on?'b-on':'b-off'); $('cobBadge').textContent=on?'Online':'Offline';
+    $('colCobol').classList.toggle('offline',!on); renderForm(); renderRecon(); renderTok(); }
+  $('stNext').textContent=nextBatch(S.t);
+  const mn=Math.floor(S.t); if(mn!==lastMin){ lastMin=mn; renderLive(); }
+  const d=dayOf(S.t); if(d!==lastDay){ lastDay=d; const biz=dowOf(S.t)<5; let s='';
+    for(let h=0;h<24;h++) s+='<div class="'+(biz&&h>=9&&h<18?'open':'')+(biz&&[11,14,17].includes(h)?' batch':'')+'">'+String(h).padStart(2,'0')+'</div>';
+    $('strip').innerHTML=s+'<span class="cursor" id="cursor"></span>'; }
+  $('cursor').style.left=((S.t%1440)/1440*100)+'%';
+}
+
+/* ---------- rendering ---------- */
+const prev={};
+function badge(id,key,val){ const p=prev[id]||(prev[id]={}); const now=performance.now(); const e=p[key]||(p[key]={v:val,d:0,at:-1e9});
+  if(e.v!==val){ e.d=val-e.v; e.at=now; e.v=val; } const el=now-e.at;
+  return {html:(e.d&&el<4500)?'<em class="delta '+(e.d>0?'up':'down')+'" style="animation-delay:-'+Math.round(el)+'ms">'+(e.d>0?'+':'−')+money(Math.abs(e.d))+'</em>':'',flash:el<1400}; }
+function renderWallets(){
+  const acting=$('selFrom').value, q=cSearch.trim().toLowerCase();
+  const segs=['All'].concat([...new Set(S.customers.map(c=>c.seg))]);
+  $('cSegs').innerHTML=segs.map(x=>'<button type="button" data-seg="'+esc(x)+'" aria-pressed="'+(x===cSeg)+'">'+esc(x)+'</button>').join('');
+  const list=S.customers.filter(c=>(cSeg==='All'||c.seg===cSeg)&&(!q||(c.name+' '+c.id+' '+c.seg).toLowerCase().includes(q)));
+  $('clientList').innerHTML=list.map(c=>{ const conv=c.ledger-c.memoHold, wb=badge(c.id,'b',conv), wt=badge(c.id,'t',c.tokens), pend=c.tokens-c.shadow;
+    return '<button type="button" class="crow'+(c.id===selClient?' sel':'')+'" data-client="'+c.id+'" aria-label="Open '+esc(c.name)+'"><div class="cn"><b>'+esc(c.name)+'</b><small>'+c.id+' · '+esc(c.seg)+(c.id===acting?' · <span style="color:var(--rose);font-weight:700">acting</span>':'')+'</small></div>'+
+      '<div class="cv2"><span class="cb'+(wb.flash?' flash':'')+'" id="wb-'+c.id+'" title="Bank balance (COBOL)">Bank '+money(conv)+wb.html+'</span><span class="ct'+(wt.flash?' flash':'')+'" id="wt-'+c.id+'" title="Tokens (blockchain)">Tokens '+money(c.tokens)+wt.html+'</span></div>'+
+      '<div class="cs">'+(Math.abs(pend)>.5?'<span class="st-wait">⏳ '+(pend>0?'+':'−')+money(Math.abs(pend))+' waiting to book</span>':'<span class="st-ok">✓ COBOL in sync</span>')+(c.kyc!=='Current'?' · <span class="st-bad">KYC overdue</span>':'')+(c.memoHold?' · <span class="st-wait">wire set aside</span>':'')+'</div></button>'; }).join('')||'<div class="empty">No clients match your search.</div>';
+  $('clientCount').textContent=list.length+' of '+S.customers.length+' clients';
+  renderProfile();
+}
+function renderLedgers(){
+  const dep=S.customers.reduce((a,c)=>a+c.ledger,0);
+  $('cobReserve').innerHTML=money(S.reserve,true)+badge('sys','res',S.reserve).html; $('cobDeposits').textContent=money(dep,true); $('cobLast').textContent=S.cobLast===null?'Start of day':stamp(S.cobLast);
+  $('cobFeed').innerHTML=S.entries.slice(0,8).map(e=>'<div class="item"><span class="r">'+hhmm(e.t)+'</span>'+esc(e.text)+(e.amt?'<br><b>'+money(e.amt,true)+'</b>':'')+'</div>').join('')||'<div class="empty">No entries yet today.</div>';
+  const ext=Object.entries(S.ext); $('extFeed').innerHTML=ext.map(([id,v])=>{ const p=ent(id); return '<div class="item"><b>'+money(v,true)+'</b> received by '+esc(p.name)+'<small>'+esc(p.bank)+' · '+esc(p.country)+'</small></div>'; }).join('')||'<div class="empty">No wires sent yet.</div>';
+  const on=isOnline(S.t);
+  $('qBadge').textContent=S.queue.length+' waiting';
+  $('qFeed').innerHTML=S.queue.map(e=>'<div class="item wait"><span class="r" style="color:var(--warn)">'+(on?'next batch':'waiting · COBOL closed')+'</span><b>'+esc(e.id)+'</b> · '+esc(e.desc)+'<small>Added '+stamp(e.t)+'</small></div>').join('')||'<div class="empty">Nothing waiting. COBOL is up to date.</div>';
+  const lb=S.lastBatch; $('lastBatchTitle').textContent=lb?'Last batch · '+lb.label+' · '+stamp(lb.t):'Last batch';
+  $('batchFeed').innerHTML=lb?(lb.items.length?lb.items.map((t,i)=>'<div class="item posted" style="animation-delay:'+(i*0.18)+'s">✓ '+esc(t)+'</div>').join(''):'<div class="empty">Nothing needed booking.</div>')+'<div class="item '+(lb.ok?'posted':'')+'" style="'+(lb.ok?'':'background:var(--bad-soft)')+'">'+(lb.ok?'✓ Reconciliation: everything matches':'✗ Reconciliation found a break, see Reconciliation below')+'</div>':'<div class="empty">The first batch runs at 12:00.</div>';
+  $('chainSupply').innerHTML=money(supply(),true)+badge('sys','sup',supply()).html; $('chainCount').textContent=S.chain.length;
+  $('chainFeed').innerHTML=S.chain.slice(0,8).map(x=>'<div class="item"><span class="r">'+hhmm(x.t)+'</span><b>#'+x.n+' '+x.type+'</b> · '+esc(x.desc)+'<small>'+x.hash+(x.lost?' · <span style="color:var(--bad)">event lost</span>':x.posted?' · booked in COBOL':' · waiting for COBOL')+'</small></div>').join('')||'<div class="empty">No blocks yet today.</div>';
+}
+function renderAlerts(){ $('alerts').innerHTML=S.alerts.slice(0,12).map(a=>'<div class="alert"><span class="pill p-'+a.d.decision+'">'+a.d.decision+'</span><div><b>'+esc(a.txt)+'</b><small>'+hhmm(a.t)+' · '+esc(a.why||a.d.summary)+'</small></div></div>').join('')||'<div class="empty">No alerts yet. Try the test data sheet.</div>'; }
+function renderHolds(){ $('holds').innerHTML=S.holds.length?S.holds.map(h=>{ const f=ent(h.tx.from), t=h.tx.to?ent(h.tx.to):null;
+  return '<div class="hold"><b>'+money(h.tx.amount)+'</b> · '+esc(f.name)+(t?' → '+esc(t.name):'')+'<br><span class="hint">'+stamp(h.t)+' · score '+h.d.score+' · '+esc(h.d.signals.filter(s=>s.p==='rule'||s.p>0).map(s=>s.l).join(', '))+'</span>'+
+   '<div class="act"><button class="btn mini" data-rel="'+h.id+'">Release</button><button class="btn mini" data-rej="'+h.id+'">Reject'+(h.d.sar?' + file SAR':'')+'</button></div></div>'; }).join(''):'<div class="empty">Nothing held. Suspicious payments land here for a person to decide.</div>'; }
+function renderRecon(){
+  const need=supply()+S.pendingRedeem, ratio=need?S.reserve/need*100:100, ok=ratio>=99.995;
+  const rows=S.customers.filter(c=>c.tokens||c.shadow).map(c=>{ const pend=S.queue.filter(e=>e.kind==='POST').reduce((a,e)=>a+(e.tx.deltas[c.id]||0),0);
+    const st=Math.abs(c.tokens-c.shadow)<.5?'<span class="st-ok">✓ Match</span>':Math.abs(c.tokens-(c.shadow+pend))<.5?'<span class="st-wait">⏳ Next batch</span>':'<span class="st-bad">✗ Break</span>';
+    return '<tr><td>'+esc(c.name)+'</td><td class="r mono">'+money(c.tokens,true)+'</td><td class="r mono">'+money(c.shadow,true)+'</td><td class="r mono">'+(pend?(pend>0?'+':'−')+money(Math.abs(pend),true):'—')+'</td><td>'+st+'</td></tr>'; }).join('');
+  $('recon').innerHTML='<div class="backing'+(ok?'':' bad')+'"><div><div class="eyebrow">Backing check</div><small>Reserve '+money(S.reserve)+' ÷ tokens owed '+money(need)+'</small></div><b>'+ratio.toFixed(2)+'%</b></div>'+
+   '<div class="tablewrap"><table><thead><tr><th>Client</th><th class="r">Blockchain</th><th class="r">COBOL</th><th class="r">In queue</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+   '<p class="hint" style="margin-top:8px">Last run: '+(S.recon.at===null?'not yet today':stamp(S.recon.at))+'. "Next batch" is normal: COBOL catches up when the queue is booked.</p>'+
+   (S.recon.exceptions.length?'<div class="hold" style="margin-top:8px"><b>'+S.recon.exceptions.length+' break(s) found.</b> The blockchain shows a move COBOL never heard about.<div class="act"><button class="btn mini" id="btnReplay">Replay missing event from the blockchain log</button></div></div>':'');
+  $('btnRecon').disabled=!isOnline(S.t); $('btnRecon').title=isOnline(S.t)?'':'Needs COBOL online';
+}
+function renderSelects(){ const v=$('selFrom').value||'C09'; $('selFrom').innerHTML=S.customers.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join(''); $('selFrom').value=v; }
+function renderForm(){
+  const op=S.op, cid=$('selFrom').value, on=isOnline(S.t);
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.op===op?'true':'false'));
+  const selTo=$('selTo'), pv=selTo.value;
+  if(op==='transfer'){ $('toWrap').hidden=false; selTo.innerHTML=S.customers.filter(c=>c.id!==cid).map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join(''); }
+  else if(op==='wire'){ $('toWrap').hidden=false; selTo.innerHTML=PAYEES.map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+esc(p.bank)+' ('+esc(p.country)+')</option>').join(''); }
+  else $('toWrap').hidden=true;
+  if([...selTo.options].some(o=>o.value===pv)) selTo.value=pv;
+  $('opHint').textContent={tokenize:on?'Bank is open: the dollars can be locked and tokens created 1:1.':'Bank is closed: tokenizing will be rejected, because COBOL can\'t lock the dollars.',
+    transfer:'Token payment to another Apex client. Settles in seconds, any hour.',
+    redeem:on?'Bank is open: tokens become bank balance immediately.':'Bank is closed: tokens are destroyed now; the bank balance is credited at 9 AM.',
+    wire:on?'Old-style Fedwire to another bank. Goes out now.':'Old-style Fedwire to another bank. The window is closed, so it waits until 9 AM.'}[op];
+  $('btnRun').textContent={tokenize:'Tokenize',transfer:'Send payment',redeem:'Cash out tokens',wire:'Send wire'}[op];
+}
+function renderAll(){ renderWallets(); renderLedgers(); renderAlerts(); renderHolds(); renderRecon(); renderLive(); renderTok(); renderAI(); }
+
+/* ---------- test data sheet ---------- */
+const TESTS=[
+ {t:'Tokenize (how it works)',w:'Bank open (9 AM–6 PM)',e:['APPROVE','Bank balance −$5M, reserve +$5M, tokens +$5M'],s:[['tokenize','C09',null,5e6,'treasurer']]},
+ {t:'Pay at night',w:'After 6 PM (use "Jump to 5:55 PM")',e:['APPROVE','Settles in seconds; event waits in the queue until 9 AM'],s:[['transfer','C09','C07',1e6,'treasurer']]},
+ {t:'Old-style wire at night',w:'After 6 PM',e:['WAIT','Money set aside; wire waits in the queue until 9 AM'],s:[['wire','C05','X04',9e4,'treasurer']]},
+ {t:'Money bounced straight back',w:'Any time, back to back',e:['HOLD','Step 2 is held: round-tripping'],s:[['transfer','C01','C02',2500,'treasurer'],['transfer','C02','C01',2500,'treasurer']]},
+ {t:'Unusually large payment',w:'Any time',e:['HOLD','12.5× the client\'s normal + new recipient'],s:[['transfer','C03','C08',7.5e6,'treasurer']]},
+ {t:'Unauthorised payment',w:'Any time',e:['BLOCK','Unrecognised device: possible account takeover'],s:[['transfer','C04','C05',5e5,'unknown']]},
+ {t:'Over the approver\'s limit',w:'Any time',e:['HOLD','Junior analyst limit is $250K: needs a second approver'],s:[['transfer','C07','C08',8e5,'analyst']]},
+ {t:'Kept just under $1M',w:'Any time, back to back',e:['HOLD','Step 1 watched, steps 2–3 held: possible structuring'],s:[['transfer','C10','C12',975000,'treasurer'],['transfer','C10','C12',990000,'treasurer'],['transfer','C10','C12',985000,'treasurer']]},
+ {t:'Too many payments, too fast',w:'Within 6 sim hours (pause the clock if needed)',e:['MONITOR','By payment 5 an alert is raised (sooner if the client paid recently)'],s:[['transfer','C02','C03',2e5,'treasurer'],['transfer','C02','C03',2e5,'treasurer'],['transfer','C02','C03',2e5,'treasurer'],['transfer','C02','C03',2e5,'treasurer'],['transfer','C02','C03',2e5,'treasurer']]},
+ {t:'Sanctioned recipient',w:'Any time',e:['BLOCK','Sanctions match: funds frozen'],s:[['wire','C01','X01',4e5,'treasurer']]},
+ {t:'High-risk country',w:'Any time',e:['HOLD','FATF high-risk country: extra checks'],s:[['wire','C10','X02',3e5,'treasurer']]},
+ {t:'Customer checks out of date',w:'Any time',e:['HOLD','KYC review overdue'],s:[['transfer','C11','C01',1.2e5,'treasurer']]},
+ {t:'Paying to a 12-day-old account',w:'Any time',e:['MONITOR','New recipient + brand-new account'],s:[['transfer','C01','C12',2.4e6,'treasurer']]},
+ {t:'Spending tokens you don\'t have',w:'Any time',e:['REJECT','Empty wallet: rejected before scoring'],s:[['transfer','C12','C07',1e6,'treasurer']]},
+ {t:'Tokenize at night',w:'After 6 PM',e:['REJECT','COBOL is closed, so no token can be created'],s:[['tokenize','C06',null,1e6,'treasurer']]},
+ {t:'Cash out at night',w:'After 6 PM',e:['WAIT','Tokens destroyed now; bank balance credited at 9 AM'],s:[['redeem','C04',null,2e6,'treasurer']]},
+ {t:'Catch a broken record',w:'Any time, then wait for the next batch',e:['RECON','Tick "Fault test" first; the batch finds a break; press Replay'],s:[['transfer','C01','C02',3e5,'treasurer']]}
+];
+const OPN={tokenize:'Tokenize',transfer:'Pay',redeem:'Cash out',wire:'Wire out'};
+function renderTests(){
+  $('tests').innerHTML=TESTS.map((x,i)=>'<div class="tc"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>'+esc(x.t)+'</h3><span class="pill p-'+(x.e[0]==='RECON'?'HOLD':x.e[0])+'">'+(x.e[0]==='RECON'?'Break':x.e[0]==='WAIT'?'Waits':x.e[0])+'</span></div>'+
+    '<div class="when">When: '+esc(x.w)+'</div><ol>'+x.s.map((s,j)=>'<li><span><b>'+(x.s.length>1?(j+1)+'. ':'')+OPN[s[0]]+'</b> · '+esc(cust(s[1]).name)+(s[2]?' → '+esc(ent(s[2]).name):'')+' · <b class="mono">'+money(s[3],true)+'</b>'+(s[4]!=='treasurer'?' · by <b>'+esc(BY[s[4]])+'</b>':'')+'</span><button type="button" class="btn mini" data-fill="'+i+'-'+j+'">Fill</button></li>').join('')+'</ol>'+
+    '<div class="exp"><b>Expect:</b> '+esc(x.e[1])+'</div></div>').join('');
+}
+function fill(i,j){ showTab('overview'); const s=TESTS[i].s[j]; S.op=s[0]; $('selFrom').value=s[1]; renderForm(); if(s[2]) $('selTo').value=s[2]; $('inAmt').value=s[3]; $('selBy').value=s[4]; amtRead(); renderWallets();
+  $('opForm').scrollIntoView({behavior:'smooth',block:'center'}); toast('Form filled',TESTS[i].t+(TESTS[i].s.length>1?' · step '+(j+1)+' of '+TESTS[i].s.length:'')+'. Press the button to send.','rose','Test data'); }
+function amtRead(){ const v=+$('inAmt').value; $('amtRead').textContent=v>0?'= '+money(v,true):'enter an amount'; }
+
+/* ---------- golden dataset ---------- */
+const GOLD=[
+ {id:'G01',name:'Routine supplier payment after hours',kind:'transfer',from:'C01',to:'C02',amount:6.5e5,dow:2,hour:20,hist:[],expect:'APPROVE',control:'Baseline'},
+ {id:'G02',name:'Urgent Sunday escrow payment',kind:'transfer',from:'C04',to:'C05',amount:1.8e6,dow:6,hour:14,hist:[],expect:'APPROVE',control:'Off-hours alone is not suspicious'},
+ {id:'G03',name:'Payment 12.5× client\'s normal',kind:'transfer',from:'C03',to:'C08',amount:7.5e6,dow:1,hour:22,hist:[],expect:'HOLD',control:'Unusual size + new recipient'},
+ {id:'G04',name:'Third ~$980K payment in 75 min',kind:'transfer',from:'C10',to:'C12',amount:9.8e5,dow:4,hour:20,hist:[{from:'C10',to:'C12',amount:9.75e5,ago:50},{from:'C10',to:'C12',amount:9.9e5,ago:25}],expect:'HOLD',control:'Structuring (BSA / SAR)'},
+ {id:'G05',name:'Fifth $200K payment in 2 hours',kind:'transfer',from:'C02',to:'C03',amount:2e5,dow:2,hour:23,hist:[20,45,70,100].map(a=>({from:'C02',to:'C03',amount:2e5,ago:a})),expect:'MONITOR',control:'Velocity'},
+ {id:'G06',name:'Wire to sanctioned entity',kind:'wire',from:'C01',to:'X01',amount:4e5,dow:2,hour:11,hist:[],expect:'BLOCK',control:'OFAC screening'},
+ {id:'G07',name:'Wire to Myanmar trader',kind:'wire',from:'C10',to:'X02',amount:3e5,dow:3,hour:10,hist:[],expect:'HOLD',control:'FATF high-risk country'},
+ {id:'G08',name:'$2M sent back 3h after receipt',kind:'transfer',from:'C07',to:'C08',amount:2e6,dow:6,hour:3,hist:[{from:'C08',to:'C07',amount:2e6,ago:180}],expect:'HOLD',control:'Round-tripping'},
+ {id:'G09',name:'Sender with overdue KYC',kind:'transfer',from:'C11',to:'C01',amount:1.2e5,dow:0,hour:19,hist:[],expect:'HOLD',control:'CDD rule'},
+ {id:'G10',name:'Pay with an empty wallet',kind:'transfer',from:'C09',to:'C07',amount:1e6,dow:5,hour:21,hist:[],expect:'REJECT',control:'Balance rule'},
+ {id:'G11',name:'$2.4M to 12-day-old account',kind:'transfer',from:'C01',to:'C12',amount:2.4e6,dow:1,hour:20,hist:[],expect:'MONITOR',control:'New-account risk'},
+ {id:'G12',name:'Unrecognised device sends $500K',kind:'transfer',from:'C04',to:'C05',amount:5e5,by:'unknown',dow:6,hour:2,hist:[],expect:'BLOCK',control:'Authentication'},
+ {id:'G13',name:'Junior analyst sends $800K',kind:'transfer',from:'C07',to:'C08',amount:8e5,by:'analyst',dow:3,hour:21,hist:[],expect:'HOLD',control:'Maker-checker limit'},
+ {id:'G14',name:'Tokenize after close',kind:'tokenize',from:'C09',amount:5e6,dow:0,hour:19,hist:[],expect:'REJECT',control:'No mint without locked dollars'},
+ {id:'G15',name:'Mint more than the deposit',kind:'tokenize',from:'C12',amount:2e6,dow:1,hour:11,hist:[],expect:'REJECT',control:'1:1 backing'}
+];
+let gold=[];
+function runGolden(){
+  const seed=SEED.map(c=>Object.assign({},c,{memoHold:0})); const get=id=>seed.find(c=>c.id===id)||PAYEES.find(p=>p.id===id);
+  gold=GOLD.map(g=>{ const now=g.dow*1440+g.hour*60+30; const tx={kind:g.kind,from:g.from,to:g.to,amount:g.amount,by:g.by||'treasurer'};
+    const ctx={get,now,online:isOnline(now),hist:g.hist.map(h=>({from:h.from,to:h.to,amount:h.amount,t:now-h.ago}))}; const d=evaluate(tx,ctx); return {g,d,tx,ctx,get,pass:d.decision===g.expect}; });
+  const pass=gold.filter(r=>r.pass).length;
+  $('goldTable').innerHTML='<thead><tr><th>ID</th><th>Case</th><th>Input</th><th>Tests</th><th>Expected</th><th>AI said</th><th class="r">Score</th><th></th><th>Result</th></tr></thead><tbody>'+gold.map((r,i)=>{ const g=r.g, f=get(g.from), t=g.to?get(g.to):null;
+    return '<tr class="'+(r.pass?'pass':'fail')+'"><td class="mono">'+g.id+'</td><td>'+esc(g.name)+'</td><td><b class="mono">'+money(g.amount)+'</b> '+g.kind+'<br><span class="hint">'+esc(f.name)+(t?' → '+esc(t.name):'')+' · '+DAYS[g.dow]+' '+String(g.hour).padStart(2,'0')+':30'+(g.by?' · '+BY[g.by]:'')+(g.hist.length?' · '+g.hist.length+' earlier payment(s)':'')+'</span></td><td>'+esc(g.control)+'</td><td><span class="pill p-'+g.expect+'">'+g.expect+'</span></td><td><span class="pill p-'+r.d.decision+'">'+r.d.decision+'</span></td><td class="r mono">'+r.d.score+'</td><td><button class="btn mini" data-why="'+i+'">Why?</button></td><td>'+(r.pass?'Pass':'Fail')+'</td></tr>'+
+    '<tr class="whyrow" hidden id="why-'+i+'"><td colspan="9"><p style="margin:0 0 6px"><b>AI\'s conclusion:</b> '+esc(r.d.summary)+'</p><ul class="sig">'+r.d.signals.map(s=>'<li><b>'+(s.p==='rule'?'rule':(s.p>0?'+'+s.p:'0'))+'</b><span>'+esc(s.l)+'<small>'+esc(s.d||'')+'</small></span></li>').join('')+'</ul><button class="btn mini" data-show="'+i+'" style="margin-top:8px">Open full analysis</button></td></tr>'; }).join('')+'</tbody>';
+  $('goldSum').textContent=pass+' of '+GOLD.length+' cases match the expected answer. Release rule: 100% match and zero missed holds or blocks.';
+  return pass;
+}
+function goldCsv(){ const rows=[['id','case','kind','from','to','amount_usd','initiated_by','day','time','earlier_payments','tests','expected','ai_decision','score','result']];
+  gold.forEach(r=>{ const g=r.g; rows.push([g.id,g.name,g.kind,ent(g.from).name,g.to?ent(g.to).name:'',g.amount,BY[g.by||'treasurer'],DAYS[g.dow],g.hour+':30',g.hist.map(h=>ent(h.from).name+'>'+ent(h.to).name+' '+h.amount+' '+h.ago+'m ago').join('; '),g.control,g.expect,r.d.decision,r.d.score,r.pass?'pass':'fail']); });
+  return rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); }
+
+/* ---------- guided demo ---------- */
+let demoOn=false, demoStop=false;
+async function demo(){
+  demoOn=true; demoStop=false; showTab('overview'); $('btnDemo').disabled=true; $('btnDemoStop').hidden=false;
+  const keepRun=S.running, keepPace=pace; S.running=false; pace=Math.max(pace,850);
+  const N=8, chk=()=>{ if(demoStop) throw new Error('stop'); };
+  const say=async(n,t,b)=>{ chk(); narr('<span class="tag t-rose">Demo '+n+'/'+N+'</span><b>'+esc(t)+'.</b> '+esc(b)); toast(t,b,'rose','Guided demo · '+n+'/'+N); log('Demo',t); await sleep(2600); chk(); };
+  try{
+    if(!isOnline(S.t)){ jump(9,25); await sleep(800); }
+    await say(1,'Tokenize while the bank is open','Ridgeway turns $5M of its bank balance into tokens. Watch the coins: bank balance → reserve → blockchain → wallet.');
+    await doTokenize('C09',5e6,'treasurer');
+    await say(2,'The bank closes at 6 PM','Jumping to the evening. COBOL and Fedwire go offline; the blockchain stays live.');
+    jump(17,58); advanceTo(S.t+5); renderAll(); await sleep(2400);
+    await say(3,'Pay at night','Ridgeway pays Lantern Peak $1M. Watch the tokens move between their wallets in seconds.');
+    await doTransfer('C09','C07',1e6,'treasurer');
+    await say(4,'Same thing the old way','A Fedwire wire can\'t go out now. It waits in the queue until morning.');
+    await doWire('C05','X04',9e4,'treasurer');
+    await say(5,'AI catches money bounced back','Meridian pays Coral $2,500 and Coral sends it straight back. The second one is held.');
+    { const kp=pace; pace=Math.min(pace,500); try{ await doTransfer('C01','C02',2500,'treasurer'); await doTransfer('C02','C01',2500,'treasurer'); } finally{ pace=kp; } }
+    await say(6,'AI blocks an unauthorised payment','Someone on an unrecognised device tries to send $500K from Northgate.');
+    await doTransfer('C04','C05',5e5,'unknown');
+    await say(7,'Sanctions: blocked instantly','A wire to a company on the (simulated) sanctions list is stopped by a fixed rule.');
+    await doWire('C01','X01',4e5,'treasurer');
+    await say(8,'9 AM: COBOL catches up','The bank reopens. Watch the queue empty into COBOL, the waiting wire go out, and reconciliation turn green.');
+    jump(8,58); advanceTo(S.t+5); renderAll(); await sleep(2600);
+    narr('<span class="tag t-ok">Done</span><b>That\'s the whole story.</b> Money moved at night, the AI stopped the bad ones, and at 9 AM the books caught up with everything matching.');
+    toast('Demo complete','Check the AI compliance agent tab for the held payment, and Clients to see where the money went.','ok','Guided demo');
+  } catch(e){ if(e.message!=='stop') console.error(e); narr('<b>Demo stopped.</b> The simulator is yours.'); }
+  finally{ S.running=keepRun; pace=keepPace; demoOn=false; $('btnDemo').disabled=false; $('btnDemoStop').hidden=true; hot(null); renderAll(); }
+}
+
+/* ---------- wiring ---------- */
+function bind(){
+  $('selFrom').addEventListener('change',()=>{ renderForm(); renderWallets(); });
+  $('tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-op]'); if(!b) return; S.op=b.dataset.op; $('inAmt').value={tokenize:5e6,transfer:1e6,redeem:1e6,wire:25e4}[S.op]; amtRead(); renderForm(); });
+  $('inAmt').addEventListener('input',amtRead);
+  $('quickAmt').addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(b){ $('inAmt').value=b.dataset.a; amtRead(); } });
+  $('opForm').addEventListener('submit',e=>{ e.preventDefault(); if(busy){ toast('Please wait','Another operation is still running. It will finish in a moment.','warn','System'); return; } const amt=Math.round(+$('inAmt').value), cid=$('selFrom').value, to=$('selTo').value, by=$('selBy').value;
+    if(!(amt>0)){ toast('Enter an amount above $0','Type a number or use a quick-amount button.','bad','Form'); return; }
+    const b=$('btnRun'); b.disabled=true; setTimeout(()=>b.disabled=false,700);
+    enqueueOp(()=>S.op==='tokenize'?doTokenize(cid,amt,by):S.op==='transfer'?doTransfer(cid,to,amt,by):S.op==='redeem'?doRedeem(cid,amt,by):doWire(cid,to,amt,by)); });
+  $('nav').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]'); if(b) showTab(b.dataset.tab); });
+  $('clientList').addEventListener('click',e=>{ const w=e.target.closest('[data-client]'); if(w){ selClient=w.dataset.client; renderWallets(); } });
+  $('cSearch').addEventListener('input',e=>{ cSearch=e.target.value; renderWallets(); });
+  $('cSegs').addEventListener('click',e=>{ const b=e.target.closest('[data-seg]'); if(b){ cSeg=b.dataset.seg; renderWallets(); } });
+  $('profile').addEventListener('click',e=>{ const b=e.target.closest('[data-pa]'); if(!b) return; const op=b.dataset.pa;
+    if(op==='tokenize'){ $('tkClient').value=selClient; renderTok(); showTab('tokenize'); return; }
+    $('selFrom').value=selClient; S.op=op; $('inAmt').value={transfer:1e6,redeem:1e6}[op]; amtRead(); renderForm(); renderWallets(); showTab('overview'); $('opForm').scrollIntoView({behavior:'smooth',block:'center'}); });
+  $('tkForm').addEventListener('submit',async e=>{ e.preventDefault(); if(busy){ toast('Please wait','Another operation is still running. It will finish in a moment.','warn','System'); return; }
+    const cid=$('tkClient').value, amt=Math.round(+$('tkAmt').value), by=$('tkBy').value;
+    if(!(amt>0)){ toast('Enter an amount above $0','Type a number or use a quick-amount button.','bad','Tokenization'); return; }
+    tkPending=true; renderTok(); await enqueueOp(()=>doTokenize(cid,amt,by)); tkPending=false; renderTok(); });
+  $('tkClient').addEventListener('change',renderTok); $('tkAmt').addEventListener('input',renderTok); $('tkBy').addEventListener('change',renderTok);
+  $('tkQuick').addEventListener('click',e=>{ const b=e.target.closest('[data-a]'); if(b){ $('tkAmt').value=b.dataset.a; renderTok(); } });
+  $('btnDup').addEventListener('click',sendDuplicate);
+  document.querySelector('.qa').addEventListener('click',e=>{ const b=e.target.closest('[data-qa]'); if(!b) return; const a=b.dataset.qa;
+    if(a==='tokenize') showTab('tokenize'); else if(a==='clients') showTab('clients'); else if(a==='dup'){ sendDuplicate(); showTab('queue'); }
+    else if(a==='recon'){ showTab('queue'); $('btnRecon').click(); } else if(a==='golden'){ showTab('ai'); $('goldCard').open=true; $('btnGolden').click(); $('goldCard').scrollIntoView({behavior:'smooth',block:'start'}); } });
+  $('aiHist').addEventListener('click',e=>{ const r=e.target.closest('[data-scr]'); if(r){ aiExt=null; aiSel=+r.dataset.scr; renderAI(); $('analysis').scrollIntoView({behavior:'smooth',block:'start'}); } });
+  $('aFilt').addEventListener('click',e=>{ const b=e.target.closest('[data-af]'); if(b){ aCat=b.dataset.af; renderAudit(); } });
+  $('aSearch').addEventListener('input',e=>{ aQ=e.target.value; renderAudit(); });
+  $('btnAuditClear').addEventListener('click',()=>{ const b=$('btnAuditClear'); if(Date.now()-clearArm>4000){ clearArm=Date.now(); b.textContent='Click again to clear'; setTimeout(()=>{ b.textContent='Clear log'; },4000); return; }
+    clearArm=0; b.textContent='Clear log'; AUDIT=[]; saveAudit(); audit('System','Success','Transaction log cleared by user.',{comp:'Audit log'}); toast('Log cleared','The audit trail starts fresh.','warn','Audit log'); });
+  $('btnAuditCsv').addEventListener('click',async()=>{ const csv=auditCsv(); try{ await navigator.clipboard.writeText(csv); toast('Copied as CSV',AUDIT.length+' log entries copied. Paste into Excel or Sheets.','ok','Audit log'); }
+    catch(_){ const ta=document.createElement('textarea'); ta.value=csv; ta.style.cssText='width:100%;height:150px;margin-top:8px;font:11px var(--f-mono)'; ta.setAttribute('aria-label','CSV'); $('auditSum').after(ta); ta.select(); toast('Clipboard blocked','The CSV is selected in the box under the table.','warn','Audit log'); } });
+  $('tests').addEventListener('click',e=>{ const b=e.target.closest('[data-fill]'); if(b){ const [i,j]=b.dataset.fill.split('-').map(Number); fill(i,j); } });
+  $('selPace').addEventListener('change',e=>{ pace=+e.target.value; });
+  $('btnPause').addEventListener('click',()=>{ S.running=!S.running; $('btnPause').textContent=S.running?'Pause':'Resume'; $('btnPause').setAttribute('aria-pressed',String(!S.running)); });
+  document.querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{ S.speed=+b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); }));
+  $('btnClose').addEventListener('click',()=>{ jump(17,55); log('Clock','Jumped to '+stamp(S.t)+'.'); });
+  $('btnOpen').addEventListener('click',()=>{ jump(8,55); log('Clock','Jumped to '+stamp(S.t)+'.'); });
+  $('btnReset').addEventListener('click',()=>{ const sp=S.speed; S=fresh(); S.speed=sp; lastDay=-1; lastOn=null; for(const k in prev) delete prev[k]; renderSelects(); renderForm(); renderAll(); emptyDecision(); hot(null);
+    narr('<b>Reset.</b> Back to Monday 9 AM with the starting balances.'); seedLog(); aiExt=null; aiSel=0; renderTrace(); renderAI(); renderTok();
+    audit('System','Success','Simulation reset to Mon 26 Oct 09:00 with starting balances. Earlier log entries are kept.',{comp:'Simulator'}); toast('Simulation reset','Back to Monday 9 AM. The transaction log keeps its history.','rose','Simulator'); });
+  $('holds').addEventListener('click',e=>{ const r=e.target.closest('[data-rel]'), j=e.target.closest('[data-rej]'); if(r) release(r.dataset.rel); if(j) rejectHold(j.dataset.rej); });
+  $('recon').addEventListener('click',e=>{ if(e.target.id==='btnReplay') replay(); });
+  $('btnRecon').addEventListener('click',()=>{ const ok=reconcile(); audit('Reconciliation',ok?'Matched':'Break','Manual reconciliation: '+(ok?'blockchain, COBOL (plus queue) and reserve agree.':S.recon.exceptions.length+' break(s) found.'),{comp:'Reconciliation engine',cids:S.recon.exceptions.map(e=>e.cid)}); toast(ok?'Everything matches':'Break found',ok?'Blockchain, COBOL (plus queue) and reserve agree.':'See the Reconciliation table.',ok?'ok':'bad','Reconciliation'); renderAll(); });
+  $('chkDrop').addEventListener('change',e=>{ S.dropNext=e.target.checked; });
+  $('btnGolden').addEventListener('click',()=>{ const p=runGolden(); toast('Exam graded',p+' of '+GOLD.length+' answers match the compliance answer key.',p===GOLD.length?'ok':'bad','Golden dataset'); });
+  $('goldTable').addEventListener('click',e=>{ const w=e.target.closest('[data-why]'); if(w){ const r=$('why-'+w.dataset.why); r.hidden=!r.hidden; w.textContent=r.hidden?'Why?':'Hide'; return; }
+    const s=e.target.closest('[data-show]'); if(s){ const r=gold[+s.dataset.show]; showDecision(r.d,r.tx,r.g.id+' · '+r.g.name);
+      aiExt={id:r.g.id,t:r.ctx.now,tx:r.tx,d:r.d,tr:trace(r.tx,r.ctx),fromName:r.get(r.g.from).name,toName:r.g.to?r.get(r.g.to).name:'',label:r.g.name+' (golden case)'}; renderAI(); $('analysis').scrollIntoView({behavior:'smooth',block:'start'}); } });
+  $('btnCsv').addEventListener('click',async()=>{ const csv=goldCsv(); try{ await navigator.clipboard.writeText(csv); toast('Copied as CSV','Paste into Excel or Sheets.','ok','Golden dataset'); }
+    catch(_){ const ta=document.createElement('textarea'); ta.value=csv; ta.style.cssText='width:100%;height:150px;margin-top:8px;font:11px var(--f-mono)'; ta.setAttribute('aria-label','CSV'); $('goldSum').after(ta); ta.select(); toast('Clipboard blocked','The CSV is selected in the box under the table.','warn','Golden dataset'); } });
+  $('btnDemo').addEventListener('click',()=>{ if(!demoOn) enqueueOp(demo); });
+  $('btnDemoStop').addEventListener('click',()=>{ demoStop=true; });
+}
+function seedLog(){ log('Apex','Simulation started '+stamp(S.t)+'. COBOL is online. '+S.customers.filter(c=>c.tokens>0).length+' clients already hold tokens; the reserve ('+money(S.reserve)+') backs all of them.'); }
+
+drawStages(); drawMap(); renderSelects(); $('tkClient').innerHTML=S.customers.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join(''); $('tkClient').value='C09';
+renderTests(); bind(); seedLog(); renderForm(); renderAll(); emptyDecision(); amtRead(); runGolden(); renderTrace(); renderNotes(); renderAudit();
+audit('System','Success','Session '+SESSION+' started at '+stamp(S.t)+'. COBOL online; reserve '+money(S.reserve,true)+' backs '+money(supply(),true)+' of tokens (100%).',{comp:'Simulator'});
+try{ const tb=localStorage.getItem('apexTR.tab'); if(tb&&document.querySelector('[data-view="'+tb+'"]')) showTab(tb); }catch(_){}
+requestAnimationFrame(t=>{ last=t; requestAnimationFrame(frame); });
+})();
+</script>
+
+</body></html>
